@@ -10,6 +10,7 @@ import { normalizeProviderConfig, validateDraft, ValidationError } from "../src/
 
 const activeRequests = new Map<string, { requestId: string; controller: AbortController }>();
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+let reconcileTail: Promise<void> = Promise.resolve();
 
 function optionsSender(sender: Browser.runtime.MessageSender): boolean {
   return sender.id === browser.runtime.id && sender.url === browser.runtime.getURL("/options.html");
@@ -31,19 +32,38 @@ async function grantedSitePatterns(): Promise<string[]> {
   return checks.filter((item) => item.granted).map((item) => item.pattern);
 }
 
-async function reconcileContentScripts(): Promise<void> {
+async function reconcileContentScriptsNow(): Promise<void> {
   const granted = await grantedSitePatterns();
   const existing = await browser.scripting.getRegisteredContentScripts({ ids: [CONTENT_SCRIPT_ID] });
-  if (existing.length) await browser.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
-  if (!granted.length) return;
-  await browser.scripting.registerContentScripts([{
+  if (!granted.length) {
+    if (existing.length) await browser.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+    return;
+  }
+  const registration = {
     id: CONTENT_SCRIPT_ID,
     matches: granted,
     js: [CONTENT_SCRIPT_FILE],
-    runAt: "document_idle",
+    css: [],
+    runAt: "document_idle" as const,
     persistAcrossSessions: true,
     allFrames: false
-  }]);
+  };
+  if (existing.length) await browser.scripting.updateContentScripts([registration]);
+  else {
+    try {
+      await browser.scripting.registerContentScripts([registration]);
+    } catch (error) {
+      const concurrentlyRegistered = await browser.scripting.getRegisteredContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+      if (!concurrentlyRegistered.length) throw error;
+      await browser.scripting.updateContentScripts([registration]);
+    }
+  }
+}
+
+function reconcileContentScripts(): Promise<void> {
+  const next = reconcileTail.then(reconcileContentScriptsNow, reconcileContentScriptsNow);
+  reconcileTail = next.catch(() => undefined);
+  return next;
 }
 
 async function injectOpenTabs(patterns: string[]): Promise<void> {
@@ -85,7 +105,7 @@ async function handleOptimize(message: Extract<InternalRequest, { type: "OPTIMIZ
   const controller = new AbortController();
   activeRequests.set(key, { requestId: message.requestId, controller });
   try {
-    const raw = await requestProvider(config, prompt, controller.signal);
+    const raw = await requestProvider(config, { ...prompt, requireOptimizedPromptJson: true }, controller.signal);
     const optimizedText = parseOptimizedResponse(raw, message.text);
     return { ok: true, requestId: message.requestId, optimizedText };
   } catch (error) {
@@ -163,19 +183,19 @@ export default defineBackground({
   type: "module",
   main() {
     void restrictStorageAccess();
-    void reconcileContentScripts();
+    void reconcileContentScripts().catch(() => undefined);
     browser.runtime.onInstalled.addListener((details) => {
       void restrictStorageAccess();
-      void reconcileContentScripts();
+      void reconcileContentScripts().catch(() => undefined);
       if (details.reason === "install") void browser.runtime.openOptionsPage();
     });
     browser.runtime.onMessage.addListener(handleMessage);
     browser.action.onClicked.addListener(() => { void browser.runtime.openOptionsPage(); });
     browser.permissions.onAdded.addListener((permissions) => {
-      void reconcileContentScripts().then(() => injectOpenTabs(permissions.origins ?? []));
+      void reconcileContentScripts().then(() => injectOpenTabs(permissions.origins ?? [])).catch(() => undefined);
     });
     browser.permissions.onRemoved.addListener(() => {
-      void teardownTabs().then(() => reconcileContentScripts());
+      void teardownTabs().then(() => reconcileContentScripts()).catch(() => undefined);
     });
     browser.storage.sync.onChanged.addListener(() => {
       void getSettings().then(broadcastSettings);

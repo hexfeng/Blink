@@ -5,6 +5,7 @@
   { "id": "repetitive-en", "mode": "concise", "input": "Please make this shorter and more concise by removing repeated and redundant repetition." },
   { "id": "complex-constraints", "mode": "professional", "input": "分析这个方案，面向产品经理，输出不超过 800 字，保留日期 2026-08-08 和预算 15,000 元，不要编造数据。" },
   { "id": "ambiguous", "mode": "auto", "input": "帮我看看这个。" },
+  { "id": "analysis-expansion-zh", "mode": "auto", "input": "帮我分析一下今天的美股", "expectation": "不能只做同义改写；应补充市场表现、驱动因素、板块与代表性个股、宏观与新闻信息、风险，并用标题、分段和列表组织输出，同时要求标明时效与来源。" },
   { "id": "mixed-language", "mode": "auto", "input": "帮我 review 这段 onboarding copy，保持 CTA 和 conversion rate 两个词为英文。" },
   { "id": "url-query", "mode": "professional", "input": "参考 https://example.com/report?id=42&lang=zh 提供建议。" },
   { "id": "duplicate-url", "mode": "auto", "input": "比较 https://example.com/a 和 https://example.com/a，不要遗漏任何链接。" },

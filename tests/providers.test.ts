@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ProviderFailure, requestProvider } from "../src/lib/providers";
+import { ProviderFailure, requestProvider, testProvider } from "../src/lib/providers";
 import type { ProviderConfig } from "../src/lib/types";
 
 const baseConfig = { schemaVersion: 1 as const, apiKey: "secret-key", model: "test-model" };
@@ -45,6 +45,71 @@ describe("provider adapters", () => {
     const error = await requestProvider({ ...baseConfig, kind: "openai-compatible", baseUrl: "https://example.com/v1" }, { system: "s", user: "u" }).catch((value: unknown) => value);
     expect(error).toBeInstanceOf(ProviderFailure);
     expect((error as ProviderFailure).safeError.code).toBe("UNAUTHORIZED");
+    expect(JSON.stringify((error as ProviderFailure).safeError)).not.toContain("secret-key");
+  });
+
+  it("uses current token parameters for official OpenAI without sampling controls", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await testProvider({ ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).toMatchObject({ model: "gpt-5.6-luna", stream: false, max_completion_tokens: 256 });
+    expect(body).not.toHaveProperty("max_tokens");
+    expect(body).not.toHaveProperty("temperature");
+  });
+
+  it("uses a strict optimized-prompt schema for official OpenAI rewrite requests", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"optimized_prompt":"result"}' } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await requestProvider(
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna" },
+      { system: "system", user: "user", requireOptimizedPromptJson: true }
+    );
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.response_format).toEqual({
+      type: "json_schema",
+      json_schema: {
+        name: "blink_prompt_rewrite",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: { optimized_prompt: { type: "string" } },
+          required: ["optimized_prompt"],
+          additionalProperties: false
+        }
+      }
+    });
+  });
+
+  it("keeps legacy token parameters for third-party OpenAI-compatible services", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await requestProvider(
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://gateway.example/proxy/v1" },
+      { system: "system", user: "user", maxOutputTokens: 256 }
+    );
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).toMatchObject({ temperature: 0.2, max_tokens: 256 });
+    expect(body).not.toHaveProperty("max_completion_tokens");
+    expect(body).not.toHaveProperty("response_format");
+  });
+
+  it("maps HTTP 400 to a safe request rejection without exposing the response body", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("secret-key unsupported parameter detail", { status: 400 })));
+
+    const error = await requestProvider(
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1" },
+      { system: "s", user: "u" }
+    ).catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(ProviderFailure);
+    expect((error as ProviderFailure).safeError).toEqual({ code: "REQUEST_REJECTED", message: "REQUEST_REJECTED", retryable: false });
     expect(JSON.stringify((error as ProviderFailure).safeError)).not.toContain("secret-key");
   });
 });

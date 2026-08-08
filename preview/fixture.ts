@@ -3,6 +3,7 @@ import { readEditor, writeEditor } from "../src/content/editor";
 const textarea = document.querySelector<HTMLTextAreaElement>("#fixture-textarea")!;
 const richHost = document.querySelector<HTMLDivElement>("#rich-host")!;
 const events = document.querySelector<HTMLOutputElement>("#events")!;
+const structuredPrompt = "# Core task\n\nAnalyze the market.\n\n## Dimensions\n\n- Performance\n- Drivers";
 let eventCount = 0;
 
 function mountRich() {
@@ -28,7 +29,7 @@ mountRich();
 document.querySelector("#write-textarea")?.addEventListener("click", () => writeEditor(textarea, "Optimized textarea"));
 document.querySelector("#write-rich")?.addEventListener("click", () => {
   const editor = document.querySelector<HTMLElement>("#fixture-rich")!;
-  writeEditor(editor, "Optimized rich text");
-  if (readEditor(editor) !== "Optimized rich text") throw new Error("Rich editor read-back failed");
+  writeEditor(editor, structuredPrompt);
+  if (readEditor(editor) !== structuredPrompt) throw new Error("Rich editor read-back failed");
 });
 document.querySelector("#remount-rich")?.addEventListener("click", mountRich);

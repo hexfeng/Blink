@@ -5,7 +5,22 @@ interface ProviderRequest {
   system: string;
   user: string;
   maxOutputTokens?: number;
+  requireOptimizedPromptJson?: boolean;
 }
+
+const OPTIMIZED_PROMPT_RESPONSE_FORMAT = {
+  type: "json_schema",
+  json_schema: {
+    name: "blink_prompt_rewrite",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: { optimized_prompt: { type: "string" } },
+      required: ["optimized_prompt"],
+      additionalProperties: false
+    }
+  }
+} as const;
 
 export class ProviderFailure extends Error {
   constructor(public readonly safeError: SafeError) {
@@ -25,6 +40,7 @@ function mapStatus(status: number): SafeError {
   if (status === 401 || status === 403) return makeError("UNAUTHORIZED", false);
   if (status === 404) return makeError("MODEL_NOT_FOUND", false);
   if (status === 429) return makeError("RATE_LIMITED", true);
+  if (status === 400) return makeError("REQUEST_REJECTED", false);
   return makeError("PROVIDER_ERROR", status >= 500);
 }
 
@@ -68,10 +84,23 @@ function parseGemini(data: unknown): string {
 async function requestWithSignal(config: ProviderConfig, request: ProviderRequest, signal: AbortSignal): Promise<string> {
   const maxTokens = request.maxOutputTokens ?? MAX_OUTPUT_TOKENS;
   if (config.kind === "openai-compatible") {
+    const commonBody = {
+      model: config.model,
+      messages: [{ role: "system", content: request.system }, { role: "user", content: request.user }],
+      stream: false
+    };
+    const isOfficialOpenAi = new URL(config.baseUrl).hostname === "api.openai.com";
+    const body = isOfficialOpenAi
+      ? {
+          ...commonBody,
+          max_completion_tokens: maxTokens,
+          ...(request.requireOptimizedPromptJson ? { response_format: OPTIMIZED_PROMPT_RESPONSE_FORMAT } : {})
+        }
+      : { ...commonBody, temperature: 0.2, max_tokens: maxTokens };
     const data = await fetchJson(endpoint(config.baseUrl, "chat/completions"), {
       method: "POST",
       headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: config.model, messages: [{ role: "system", content: request.system }, { role: "user", content: request.user }], temperature: 0.2, stream: false, max_tokens: maxTokens })
+      body: JSON.stringify(body)
     }, signal);
     return parseOpenAi(data);
   }
@@ -105,6 +134,6 @@ export async function requestProvider(config: ProviderConfig, request: ProviderR
 }
 
 export async function testProvider(config: ProviderConfig, signal?: AbortSignal): Promise<void> {
-  const result = await requestProvider(config, { system: "Reply with a short plain-text acknowledgement.", user: "OK", maxOutputTokens: 16 }, signal);
+  const result = await requestProvider(config, { system: "Reply with a short plain-text acknowledgement.", user: "OK", maxOutputTokens: 256 }, signal);
   if (!result.trim()) throw new ProviderFailure(makeError("INVALID_RESPONSE", true));
 }

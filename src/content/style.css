@@ -7,8 +7,11 @@
 button { font: inherit; }
 
 .blink-stage {
-  position: relative;
-  width: min(340px, calc(100vw - 24px));
+  position: fixed;
+  z-index: 2147483647;
+  top: var(--blink-top, 8px);
+  left: var(--blink-left, 12px);
+  width: var(--blink-width, min(340px, calc(100vw - 24px)));
   height: 44px;
   color: #14243b;
   font-family: Inter, "Noto Sans SC", "Segoe UI", sans-serif;

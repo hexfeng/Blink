@@ -6,10 +6,10 @@ function isTextArea(element: Element): element is HTMLTextAreaElement {
   return element instanceof HTMLTextAreaElement;
 }
 
-export function isUsableEditor(element: Element): element is SupportedEditor {
+export function isUsableEditor(element: Element, minHeight = 32): element is SupportedEditor {
   if (!(element instanceof HTMLElement)) return false;
   const rect = element.getBoundingClientRect();
-  if (rect.width < 180 || rect.height < 32) return false;
+  if (rect.width < 180 || rect.height < minHeight) return false;
   if (element.hidden || element.getAttribute("aria-hidden") === "true") return false;
   if (isTextArea(element)) return !element.disabled && !element.readOnly;
   return element.isContentEditable && element.getAttribute("contenteditable") !== "false";
@@ -18,9 +18,15 @@ export function isUsableEditor(element: Element): element is SupportedEditor {
 export function findEditor(site: SiteDescriptor): SupportedEditor | null {
   for (const selector of site.selectors) {
     const candidates = document.querySelectorAll(selector);
-    for (const candidate of candidates) if (isUsableEditor(candidate)) return candidate;
+    for (const candidate of candidates) if (isUsableEditor(candidate, site.minEditorHeight)) return candidate;
   }
   return null;
+}
+
+export function findOverlayAnchor(editor: SupportedEditor, site: SiteDescriptor): HTMLElement {
+  if (!site.overlayAnchorSelector) return editor;
+  const anchor = editor.closest(site.overlayAnchorSelector);
+  return anchor instanceof HTMLElement ? anchor : editor;
 }
 
 export function readEditor(editor: SupportedEditor): string {
@@ -32,6 +38,15 @@ function dispatchInput(editor: SupportedEditor, text: string): void {
   editor.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, composed: true, inputType: "insertText", data: text }));
   editor.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true, inputType: "insertText", data: text }));
   editor.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+}
+
+function replaceRichText(editor: HTMLElement, text: string): void {
+  const fragment = document.createDocumentFragment();
+  text.split("\n").forEach((line, index) => {
+    if (index > 0) fragment.append(document.createElement("br"));
+    if (line) fragment.append(document.createTextNode(line));
+  });
+  editor.replaceChildren(fragment);
 }
 
 export function writeEditor(editor: SupportedEditor, text: string): void {
@@ -51,7 +66,7 @@ export function writeEditor(editor: SupportedEditor, text: string): void {
   selection?.removeAllRanges();
   selection?.addRange(range);
   const inserted = document.execCommand?.("insertText", false, text) ?? false;
-  if (!inserted) editor.textContent = text;
+  if (!inserted || readEditor(editor) !== text) replaceRichText(editor, text);
   dispatchInput(editor, text);
   focusEditorEnd(editor);
 }

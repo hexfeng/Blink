@@ -24,7 +24,8 @@ test("shared editor driver handles textarea, rich text, and remount", async ({ p
   await page.getByRole("button", { name: "Write textarea" }).click();
   await expect(page.getByLabel("Textarea")).toHaveValue("Optimized textarea");
   await page.getByRole("button", { name: "Write rich editor" }).click();
-  await expect(page.getByRole("textbox", { name: "Rich editor" })).toHaveText("Optimized rich text");
+  const richText = await page.getByRole("textbox", { name: "Rich editor" }).evaluate((element) => (element as HTMLElement).innerText);
+  expect(richText).toBe("# Core task\n\nAnalyze the market.\n\n## Dimensions\n\n- Performance\n- Drivers");
   await page.getByRole("button", { name: "Remount rich editor" }).click();
   await expect(page.getByRole("textbox", { name: "Rich editor" })).toHaveText("Original rich text");
 });

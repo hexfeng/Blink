@@ -57,7 +57,13 @@ export function BlinkOverlay({ controller, state, locale }: Props) {
   }
 
   return (
-    <div className="blink-stage">
+    <div
+      className="blink-stage"
+      onPointerEnter={() => controller.setOverlayActive(true)}
+      onPointerLeave={() => controller.setOverlayActive(false)}
+      onFocusCapture={() => controller.setOverlayActive(true)}
+      onBlurCapture={() => controller.setOverlayActive(false)}
+    >
       <div className="blink-floating">
         {state.menuOpen ? (
           <div className="blink-menu" role="menu" ref={menuRef} onKeyDown={handleMenuKeyDown} aria-label={t("optimizationModes")}>

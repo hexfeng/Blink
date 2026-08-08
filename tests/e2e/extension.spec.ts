@@ -26,6 +26,10 @@ test("loads the built options page with the three required sections", async () =
   await expect(optionsPage.getByRole("heading", { name: "Model service" })).toBeVisible();
   await expect(optionsPage.getByRole("heading", { name: "Optimization modes" })).toBeVisible();
   await expect(optionsPage.getByRole("heading", { name: "Supported sites" })).toBeVisible();
+  await expect(optionsPage.getByRole("checkbox", { name: "ChatGPT: Site allowed" })).toBeEnabled();
+  await expect(optionsPage.getByRole("checkbox", { name: "Meta AI: Site allowed" })).toBeDisabled();
+  await expect(optionsPage.getByText("Pending verification").first()).toBeVisible();
+  await expect(optionsPage.getByText("External blocker")).toBeVisible();
 });
 
 test("has no serious or critical axe violations on first use", async () => {

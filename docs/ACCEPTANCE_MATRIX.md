@@ -4,21 +4,21 @@
 
 | 范围 | 必须通过 |
 | --- | --- |
-| Prompt | 三种内置模式、自定义模式、注入文本、JSON 输出协议 |
+| Prompt | 三种内置模式差异、自定义模式、宽泛分析请求的实质展开与结构化换行、简单任务不过度扩写、注入文本、JSON 输出协议 |
 | Provider | 三类请求映射、25 秒超时、安全错误、非空测试响应 |
 | 安全 | 消息来源、顶层 frame、精确站点权限、Key 不出可信上下文 |
 | 编辑器 | textarea、contenteditable、富文本、写回读回、恢复、撤销 |
-| UI | 状态转换、菜单键盘操作、聚焦/草稿可见性、翻转定位 |
+| UI | 状态转换、菜单键盘操作、聚焦/草稿可见性、与完整 Composer 外框右边缘对齐、外框上方 8px 零重叠、长草稿内部滚动不漂移 |
 | 存储 | schemaVersion 1、回退自动模式、清除 Provider、完整重置 |
 
 ## 实站门槛
 
-每个域名执行 PRD 中的八项路径，并增加：空且失焦时隐藏、200% 缩放、中英文布局、键盘路径、权限即时移除。未完成真实验证的站点必须标记 `externalBlocked`，不得显示为已验证。
+每个域名执行 PRD 中的八项路径，并增加：空且失焦时隐藏、200% 缩放、中英文布局、键盘路径、权限即时移除。尚未实测但可由测试者授权的站点标记 `pendingVerification`；它允许开启权限，但不得显示为已验证。只有确有账号、地区或登录墙阻塞的站点标记 `externalBlocked` 并禁用开关。
 
 | Wave | 产品 | 域名 | 当前证据 |
 | --- | --- | --- | --- |
 | A | ChatGPT | chatgpt.com | 待本地登录态验证 |
-| A | Gemini | gemini.google.com | 待本地登录态验证 |
+| A | Gemini | gemini.google.com | 已确认当前 `.ql-editor` 与完整 `input-area` 外框；待完整优化/撤销实站验收 |
 | A | Claude | claude.ai | 待本地登录态验证 |
 | A | Grok | grok.com | 待本地登录态验证 |
 | A | Qwen | chat.qwen.ai | 待本地登录态验证 |

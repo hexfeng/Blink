@@ -26,6 +26,7 @@ const messages = {
     unauthorized: "API key is invalid or unauthorized",
     modelNotFound: "Model unavailable. Check the model name",
     rateLimited: "Provider rate limit or quota reached",
+    requestRejected: "Provider rejected the request parameters. Check the model",
     timeout: "Request timed out. Try again",
     networkError: "Network request failed",
     invalidResponse: "Invalid model response. Try another model",
@@ -60,6 +61,7 @@ const messages = {
     supportedSites: "Supported sites",
     supportedSitesHelp: "Blink runs only on sites you explicitly allow.",
     verified: "Verified",
+    pendingVerification: "Pending verification",
     externalBlocked: "External blocker",
     clearProvider: "Clear model service",
     clearProviderHelp: "Remove the saved service configuration only.",
@@ -74,7 +76,7 @@ const messages = {
     modeNameLength: "Use 1–20 characters",
     modeInstructionLength: "Use 1–800 characters",
     saveBeforeTest: "Save this configuration before testing",
-    noSiteVerified: "No verified site is currently enabled"
+    noSiteVerified: "Enable a pending site to test Blink"
   },
   "zh-CN": {
     auto: "自动",
@@ -101,6 +103,7 @@ const messages = {
     unauthorized: "API Key 无效或无权限",
     modelNotFound: "模型不可用，请检查模型名称",
     rateLimited: "Provider 已限流或额度不足",
+    requestRejected: "Provider 拒绝了请求参数，请检查模型设置",
     timeout: "请求超时，请重试",
     networkError: "网络请求失败",
     invalidResponse: "模型返回格式无效，请重试或更换模型",
@@ -135,6 +138,7 @@ const messages = {
     supportedSites: "支持站点",
     supportedSitesHelp: "Blink 只在你明确授权的站点运行。",
     verified: "已验证",
+    pendingVerification: "待验证",
     externalBlocked: "外部条件受阻",
     clearProvider: "清除模型服务",
     clearProviderHelp: "只删除已保存的模型服务配置。",
@@ -149,7 +153,7 @@ const messages = {
     modeNameLength: "请输入 1–20 个字符",
     modeInstructionLength: "请输入 1–800 个字符",
     saveBeforeTest: "请先保存当前配置再测试",
-    noSiteVerified: "当前没有已验证且已启用的站点"
+    noSiteVerified: "启用一个待验证站点以测试 Blink"
   }
 } as const;
 

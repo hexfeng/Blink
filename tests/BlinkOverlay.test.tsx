@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { BlinkOverlay } from "../src/content/BlinkOverlay";
@@ -14,7 +14,8 @@ const controller = {
   selectMode: vi.fn(),
   openSettings: vi.fn(),
   restoreOriginal: vi.fn(),
-  copyOriginal: vi.fn()
+  copyOriginal: vi.fn(),
+  setOverlayActive: vi.fn()
 } as unknown as BlinkController;
 
 describe("BlinkOverlay success state", () => {
@@ -33,5 +34,29 @@ describe("BlinkOverlay success state", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Undo" }));
     await user.keyboard("{Enter}");
     expect(controller.undoLast).toHaveBeenCalledOnce();
+  });
+
+  it("sends the selected mode from the open menu", async () => {
+    const user = userEvent.setup();
+    vi.mocked(controller.selectMode).mockClear();
+    const state: OverlayState = { visible: true, phase: "ready", menuOpen: true, settings: DEFAULT_SETTINGS };
+    render(<BlinkOverlay controller={controller} state={state} locale="en" />);
+
+    await user.click(screen.getByRole("menuitemradio", { name: /Professional/ }));
+    expect(controller.selectMode).toHaveBeenCalledWith("professional");
+  });
+
+  it("keeps the overlay active while the pointer moves from the editor to its controls", () => {
+    vi.mocked(controller.setOverlayActive).mockClear();
+    const state: OverlayState = { visible: true, phase: "ready", menuOpen: false, settings: DEFAULT_SETTINGS };
+    const { container } = render(<BlinkOverlay controller={controller} state={state} locale="en" />);
+    const stage = container.querySelector(".blink-stage");
+    if (!stage) throw new Error("Blink stage was not rendered");
+
+    fireEvent.pointerEnter(stage);
+    fireEvent.pointerLeave(stage);
+
+    expect(controller.setOverlayActive).toHaveBeenNthCalledWith(1, true);
+    expect(controller.setOverlayActive).toHaveBeenNthCalledWith(2, false);
   });
 });

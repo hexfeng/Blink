@@ -32,6 +32,7 @@ export type ErrorCode =
   | "UNAUTHORIZED"
   | "MODEL_NOT_FOUND"
   | "RATE_LIMITED"
+  | "REQUEST_REJECTED"
   | "TIMEOUT"
   | "NETWORK_ERROR"
   | "INVALID_RESPONSE"
@@ -106,7 +107,7 @@ export type OptimizeResponse =
 
 export type CommandResponse = { ok: true } | { ok: false; error: SafeError };
 
-export type VerificationStatus = "verified" | "externalBlocked";
+export type VerificationStatus = "pendingVerification" | "verified" | "externalBlocked";
 
 export interface SiteDescriptor {
   id: string;
@@ -114,6 +115,8 @@ export interface SiteDescriptor {
   wave: "A" | "B";
   origins: string[];
   selectors: string[];
+  minEditorHeight?: number;
+  overlayAnchorSelector?: string;
   verificationStatus: VerificationStatus;
   lastVerifiedVersion?: string;
   verificationNote: string;

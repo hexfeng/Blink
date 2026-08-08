@@ -4,7 +4,7 @@ import { browser } from "wxt/browser";
 import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
 import { BlinkOverlay } from "../../src/content/BlinkOverlay";
 import { BlinkController, type OverlayState } from "../../src/content/controller";
-import { calculateOverlayPosition } from "../../src/content/positioning";
+import { applyOverlayHostPosition, calculateOverlayPosition, hideOverlayHost } from "../../src/content/positioning";
 import { findSiteByUrl, SITE_PATTERNS } from "../../src/lib/sites";
 import type { TeardownSiteRequest } from "../../src/lib/types";
 
@@ -26,33 +26,23 @@ export default defineContentScript({
     let shadowHost: HTMLElement | null = null;
     let controller: BlinkController | undefined;
 
-    function position(editor: HTMLElement | null) {
-      if (!shadowHost || !editor) {
-        if (shadowHost) shadowHost.style.display = "none";
+    function position(anchor: HTMLElement | null) {
+      if (!shadowHost || !anchor) {
+        if (shadowHost) hideOverlayHost(shadowHost);
         return;
       }
-      const rect = editor.getBoundingClientRect();
-      const position = calculateOverlayPosition(rect, { width: window.innerWidth, height: window.innerHeight });
-      Object.assign(shadowHost.style, {
-        display: "block",
-        position: "fixed",
-        zIndex: "2147483646",
-        left: `${position.anchorX}px`,
-        top: `${position.top}px`,
-        width: `${position.width}px`,
-        height: "44px",
-        transform: "translateX(-100%)",
-        overflow: "visible",
-        pointerEvents: "none"
-      });
-      shadowHost.dataset.placement = position.placement;
+      const rect = anchor.getBoundingClientRect();
+      applyOverlayHostPosition(
+        shadowHost,
+        calculateOverlayPosition(rect, { width: window.innerWidth, height: window.innerHeight })
+      );
     }
 
     const ui = await createShadowRootUi(ctx, {
       name: "blink-extension-root",
       position: "overlay",
       anchor: "body",
-      isolateEvents: ["click", "mousedown", "mouseup", "keydown", "keyup", "keypress"],
+      isolateEvents: ["click", "mousedown", "mouseup", "pointerdown", "pointerup", "keydown", "keyup", "keypress"],
       onMount(container, _shadow, host) {
         shadowHost = host;
         const app = document.createElement("div");
@@ -61,14 +51,18 @@ export default defineContentScript({
         const root = ReactDOM.createRoot(app);
         const mountedController = new BlinkController(site, position);
         controller = mountedController;
-        mountedController.subscribe((next) => {
+        const unsubscribe = mountedController.subscribe((next) => {
           state = next;
           root.render(<BlinkOverlay controller={mountedController} state={state} />);
         });
         void mountedController.start();
-        return root;
+        return { root, unsubscribe };
       },
-      onRemove(root) { root?.unmount(); }
+      onRemove(mounted) {
+        mounted?.unsubscribe();
+        mounted?.root.unmount();
+        shadowHost = null;
+      }
     });
 
     ui.mount();

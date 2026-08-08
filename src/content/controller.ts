@@ -2,7 +2,7 @@ import { browser } from "wxt/browser";
 import { INPUT_LIMIT } from "../lib/constants";
 import type { ErrorCode, ModeSelection, OptimizeResponse, PublicSettingsChangedMessage, SiteDescriptor, SyncedSettings } from "../lib/types";
 import { DEFAULT_SETTINGS } from "../lib/storage";
-import { editorIsVisible, findEditor, focusEditorEnd, readEditor, writeEditor, type SupportedEditor } from "./editor";
+import { editorIsVisible, findEditor, findOverlayAnchor, focusEditorEnd, readEditor, writeEditor, type SupportedEditor } from "./editor";
 
 export type OverlayPhase = "ready" | "loading" | "same" | "success" | "error" | "recovery";
 
@@ -23,7 +23,11 @@ export class BlinkController {
   private observer: MutationObserver | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private intersectionObserver: IntersectionObserver | null = null;
+  private overlayAnchor: HTMLElement | null = null;
   private navigationTarget: EventTarget | null = null;
+  private overlayActive = false;
+  private overlayDeactivateTimer: number | undefined;
+  private stopped = false;
   private listener: Listener = () => undefined;
   private toastTimer: number | undefined;
   private currentSession = "";
@@ -31,7 +35,7 @@ export class BlinkController {
   private undo: { original: string; optimized: string; session: string } | null = null;
   private state: OverlayState = { visible: false, phase: "ready", menuOpen: false, settings: DEFAULT_SETTINGS };
 
-  constructor(private readonly site: SiteDescriptor, private readonly onPosition: (editor: SupportedEditor | null) => void) {}
+  constructor(private readonly site: SiteDescriptor, private readonly onPosition: (anchor: HTMLElement | null) => void) {}
 
   subscribe(listener: Listener): () => void {
     this.listener = listener;
@@ -40,21 +44,21 @@ export class BlinkController {
   }
 
   async start(): Promise<void> {
+    this.stopped = false;
     this.currentSession = this.sessionKey();
     await this.refreshSettings();
+    if (this.stopped) return;
     this.observer = new MutationObserver(() => {
       this.checkSession();
       this.locate();
     });
     this.observer.observe(document.documentElement, { childList: true, subtree: true });
     window.addEventListener("resize", this.handleViewport, { passive: true });
-    window.addEventListener("scroll", this.handleViewport, { capture: true, passive: true });
     window.addEventListener("focusin", this.handleFocus, true);
     window.addEventListener("focusout", this.handleFocus, true);
     window.addEventListener("popstate", this.handleSessionChange);
     window.addEventListener("hashchange", this.handleSessionChange);
     window.visualViewport?.addEventListener("resize", this.handleViewport, { passive: true });
-    window.visualViewport?.addEventListener("scroll", this.handleViewport, { passive: true });
     this.navigationTarget = (window as Window & { navigation?: EventTarget }).navigation ?? null;
     this.navigationTarget?.addEventListener("currententrychange", this.handleSessionChange);
     browser.runtime.onMessage.addListener(this.handleRuntimeMessage);
@@ -62,18 +66,18 @@ export class BlinkController {
   }
 
   teardown(): void {
+    if (this.stopped) return;
+    this.stopped = true;
     void this.cancelRequest();
     this.detachEditor();
     this.observer?.disconnect();
     this.observer = null;
     window.removeEventListener("resize", this.handleViewport);
-    window.removeEventListener("scroll", this.handleViewport, true);
     window.removeEventListener("focusin", this.handleFocus, true);
     window.removeEventListener("focusout", this.handleFocus, true);
     window.removeEventListener("popstate", this.handleSessionChange);
     window.removeEventListener("hashchange", this.handleSessionChange);
     window.visualViewport?.removeEventListener("resize", this.handleViewport);
-    window.visualViewport?.removeEventListener("scroll", this.handleViewport);
     this.navigationTarget?.removeEventListener("currententrychange", this.handleSessionChange);
     this.navigationTarget = null;
     browser.runtime.onMessage.removeListener(this.handleRuntimeMessage);
@@ -82,12 +86,25 @@ export class BlinkController {
 
   async refreshSettings(): Promise<void> {
     const response = await browser.runtime.sendMessage({ type: "GET_PUBLIC_SETTINGS" }) as { ok: true; settings: SyncedSettings } | { ok: false };
-    if (response.ok) this.update({ settings: response.settings });
+    if (!this.stopped && response.ok) this.update({ settings: response.settings });
   }
 
   setMenuOpen(menuOpen: boolean): void {
     this.update({ menuOpen });
     if (menuOpen) void this.refreshSettings();
+  }
+
+  setOverlayActive(active: boolean): void {
+    if (this.overlayDeactivateTimer) window.clearTimeout(this.overlayDeactivateTimer);
+    if (active) {
+      this.overlayActive = true;
+      this.refreshVisibility();
+      return;
+    }
+    this.overlayDeactivateTimer = window.setTimeout(() => {
+      this.overlayActive = false;
+      this.refreshVisibility();
+    }, 0);
   }
 
   async selectMode(modeId: string): Promise<void> {
@@ -165,15 +182,24 @@ export class BlinkController {
 
   private locate(): void {
     const next = findEditor(this.site);
-    if (next === this.editor) return this.refreshVisibility();
+    const nextAnchor = next ? findOverlayAnchor(next, this.site) : null;
+    if (next === this.editor && nextAnchor === this.overlayAnchor) return this.refreshVisibility(true);
+    if (next === this.editor && nextAnchor) {
+      this.overlayAnchor = nextAnchor;
+      this.resizeObserver?.disconnect();
+      this.resizeObserver?.observe(nextAnchor);
+      return this.refreshVisibility(true);
+    }
     this.detachEditor();
     if (!next) return;
     this.editor = next;
+    const overlayAnchor = nextAnchor ?? next;
+    this.overlayAnchor = overlayAnchor;
     next.addEventListener("input", this.handleInput, true);
     next.addEventListener("keydown", this.handleKeydown, true);
     next.closest("form")?.addEventListener("submit", this.handleSubmit, true);
-    this.resizeObserver = new ResizeObserver(() => this.handleViewport());
-    this.resizeObserver.observe(next);
+    this.resizeObserver = new ResizeObserver(() => this.refreshVisibility(true));
+    this.resizeObserver.observe(overlayAnchor);
     this.intersectionObserver = new IntersectionObserver(() => this.refreshVisibility(), { threshold: [0, 0.01] });
     this.intersectionObserver.observe(next);
     this.refreshVisibility();
@@ -190,17 +216,23 @@ export class BlinkController {
     this.intersectionObserver?.disconnect();
     this.intersectionObserver = null;
     this.editor = null;
+    this.overlayAnchor = null;
+    this.overlayActive = false;
+    if (this.overlayDeactivateTimer) window.clearTimeout(this.overlayDeactivateTimer);
+    this.overlayDeactivateTimer = undefined;
     this.undo = null;
     this.onPosition(null);
     this.update({ visible: false, phase: "ready", menuOpen: false });
   }
 
-  private refreshVisibility(): void {
+  private refreshVisibility(reposition = false): void {
     if (!this.editor) return this.update({ visible: false });
     const focused = document.activeElement === this.editor || this.editor.contains(document.activeElement);
-    const visible = editorIsVisible(this.editor) && (focused || readEditor(this.editor).length > 0);
+    const visible = editorIsVisible(this.editor) && (focused || this.overlayActive || readEditor(this.editor).length > 0);
+    const becameVisible = visible && !this.state.visible;
     this.update({ visible });
-    this.onPosition(visible ? this.editor : null);
+    if (!visible) this.onPosition(null);
+    else if (becameVisible || reposition) this.onPosition(this.overlayAnchor);
   }
 
   private recoverOriginal(original: string): void {
@@ -285,8 +317,7 @@ export class BlinkController {
     window.setTimeout(() => this.refreshVisibility(), 0);
   };
   private readonly handleViewport = (): void => {
-    this.refreshVisibility();
-    if (this.editor && this.state.visible) this.onPosition(this.editor);
+    this.refreshVisibility(true);
   };
   private readonly handleSessionChange = (): void => {
     this.currentSession = this.sessionKey();

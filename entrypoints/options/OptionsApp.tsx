@@ -44,7 +44,7 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
   const serializedDraft = JSON.stringify(draft);
   const serializedProvider = provider ? JSON.stringify({ kind: provider.kind, baseUrl: provider.baseUrl, apiKey: provider.apiKey, model: provider.model }) : "";
   const dirty = serializedDraft !== serializedProvider;
-  const hasAllowedSite = SITES.some((site) => site.verificationStatus === "verified" && permissionState[site.id]);
+  const hasAllowedSite = SITES.some((site) => site.verificationStatus !== "externalBlocked" && permissionState[site.id]);
   const ready = Boolean(provider && hasAllowedSite);
 
   function updateKind(kind: ProviderKind) {
@@ -99,7 +99,7 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
 
   async function toggleSite(siteId: string, enabled: boolean) {
     const site = SITES.find((item) => item.id === siteId);
-    if (!site || site.verificationStatus !== "verified") return;
+    if (!site || site.verificationStatus === "externalBlocked") return;
     if (enabled) {
       const granted = await browser.permissions.request({ origins: site.origins });
       if (!granted) return setFeedback(t("permissionDenied"));
@@ -212,7 +212,10 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
             <div className="site-list">
               {SITES.map((site) => {
                 const blocked = site.verificationStatus === "externalBlocked";
-                return <div className="site-row" key={site.id}><Globe size={18} aria-hidden="true" /><div><strong>{site.product}</strong><small>{site.origins.map((origin) => new URL(origin.replace("*", "")).hostname).join(" · ")}</small><small>{site.verificationNote}</small></div><span className={`status-badge status-badge--${blocked ? "blocked" : "verified"}`}>{blocked ? t("externalBlocked") : t("verified")}</span><label className="switch"><input type="checkbox" aria-label={`${site.product}: ${t("siteAllowed")}`} checked={Boolean(permissionState[site.id])} disabled={blocked} onChange={(event) => void toggleSite(site.id, event.target.checked)} /><span /></label></div>;
+                const pending = site.verificationStatus === "pendingVerification";
+                const statusClass = blocked ? "blocked" : pending ? "pending" : "verified";
+                const statusLabel = blocked ? t("externalBlocked") : pending ? t("pendingVerification") : t("verified");
+                return <div className="site-row" key={site.id}><Globe size={18} aria-hidden="true" /><div><strong>{site.product}</strong><small>{site.origins.map((origin) => new URL(origin.replace("*", "")).hostname).join(" · ")}</small><small>{site.verificationNote}</small></div><span className={`status-badge status-badge--${statusClass}`}>{statusLabel}</span><label className="switch"><input type="checkbox" aria-label={`${site.product}: ${t("siteAllowed")}`} checked={Boolean(permissionState[site.id])} disabled={blocked} onChange={(event) => void toggleSite(site.id, event.target.checked)} /><span /></label></div>;
               })}
             </div>
           </section>

@@ -8,6 +8,7 @@ export const ERROR_MESSAGE_KEYS: Record<ErrorCode, MessageKey> = {
   UNAUTHORIZED: "unauthorized",
   MODEL_NOT_FOUND: "modelNotFound",
   RATE_LIMITED: "rateLimited",
+  REQUEST_REJECTED: "requestRejected",
   TIMEOUT: "timeout",
   NETWORK_ERROR: "networkError",
   INVALID_RESPONSE: "invalidResponse",

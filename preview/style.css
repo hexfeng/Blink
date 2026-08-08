@@ -30,6 +30,7 @@ body { margin: 0; }
 .host-editor { min-height: 118px; color: #79808c; font-size: 16px; line-height: 1.6; }
 .overlay-slot { position: absolute; right: 24px; bottom: -50px; }
 .overlay-slot--zoom { bottom: 10px; transform: scale(2); transform-origin: right bottom; }
+.overlay-slot .blink-stage { position: relative; top: auto; left: auto; width: min(340px, calc(100vw - 24px)); }
 
 .preview-canvas--light {
   background: linear-gradient(135deg, #f8f4ed, #eee7dc);
