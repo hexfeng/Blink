@@ -1,0 +1,205 @@
+:host {
+  all: initial;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+button { font: inherit; }
+
+.blink-stage {
+  position: relative;
+  width: min(340px, calc(100vw - 24px));
+  height: 44px;
+  color: #14243b;
+  font-family: Inter, "Noto Sans SC", "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.blink-floating {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  width: max-content;
+  max-width: 340px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.blink-pill {
+  display: flex;
+  height: 42px;
+  overflow: hidden;
+  border: 1px solid #e87a61;
+  border-radius: 13px;
+  background: #fffaf4;
+  box-shadow: 0 6px 18px rgb(33 39 50 / 12%);
+}
+
+.blink-pill button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+}
+
+.blink-primary {
+  gap: 7px;
+  min-width: 88px !important;
+  padding: 0 14px;
+  background: #d85f45;
+  color: white;
+  font-weight: 700;
+}
+
+.blink-mode-trigger {
+  gap: 8px;
+  max-width: 150px;
+  padding: 0 12px;
+  border-left: 1px solid #edaa99 !important;
+  background: #fffaf4;
+  color: #14243b;
+  font-weight: 650;
+}
+
+.blink-mode-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blink-pill--success {
+  border-color: #a9c9af;
+  background: #eef7ef;
+}
+
+.blink-success-label {
+  display: inline-flex;
+  min-width: 94px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: #2b6643;
+  font-weight: 650;
+}
+
+.blink-undo {
+  min-width: 54px !important;
+  padding: 0 10px;
+  border-left: 1px solid #bfd8c4 !important;
+  background: #fffdf9;
+  color: #14243b;
+  font-weight: 650;
+}
+
+.blink-pill button:hover:not(:disabled), .blink-feedback button:hover, .blink-recovery button:hover { filter: brightness(.96); }
+.blink-pill button:focus-visible, .blink-feedback button:focus-visible, .blink-recovery button:focus-visible, .blink-mode-item:focus-visible {
+  outline: 3px solid #2c75d8;
+  outline-offset: 2px;
+}
+.blink-pill button:disabled { cursor: wait; opacity: .68; }
+
+.blink-menu, .blink-feedback, .blink-recovery {
+  width: 310px;
+  border: 1px solid #e6ddd2;
+  border-radius: 12px;
+  background: #fffdf9;
+  box-shadow: 0 12px 32px rgb(24 34 48 / 16%);
+}
+
+.blink-menu { padding: 6px; }
+
+.blink-mode-item {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #14243b;
+  text-align: left;
+  cursor: pointer;
+}
+.blink-mode-item:hover, .blink-mode-item[aria-checked="true"] { background: #f7ede5; }
+.blink-mode-item span { min-width: 0; }
+.blink-mode-item strong, .blink-mode-item small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.blink-mode-item strong { font-size: 14px; }
+.blink-mode-item small { margin-top: 2px; color: #667084; font-size: 12px; }
+
+.blink-feedback {
+  position: relative;
+  display: flex;
+  width: max-content;
+  max-width: 340px;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+}
+.blink-feedback button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.blink-feedback--info { border-color: #cbd6e5; background: #f7fafc; color: #29415f; }
+.blink-feedback--success { border-color: #bfd8c4; background: #eef7ef; color: #2b6643; }
+.blink-feedback--error { border-color: #efc3b8; background: #fff1ed; color: #a33f2b; }
+
+.blink-recovery {
+  position: relative;
+  padding: 11px;
+  border-color: #e5cb91;
+  background: #fff8e7;
+  color: #6f5313;
+}
+.blink-recovery > div:first-child { display: flex; align-items: center; gap: 8px; }
+.blink-recovery-actions { display: flex; gap: 8px; margin-top: 10px; }
+.blink-recovery-actions button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  border: 1px solid #dec78e;
+  border-radius: 8px;
+  background: #fffdf7;
+  color: #604910;
+  cursor: pointer;
+}
+
+.blink-spinner { animation: blink-spin .9s linear infinite; }
+@keyframes blink-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .blink-spinner { animation: none; } }
+
+@media (prefers-color-scheme: dark) {
+  :host { color-scheme: dark; }
+  .blink-pill { border-color: #5b6170; background: #151a22; }
+  .blink-pill--success { border-color: #55705d; background: #1f3126; }
+  .blink-success-label { color: #bde2c5; }
+  .blink-undo { border-left-color: #55705d !important; background: #151a22; color: #f8f4ef; }
+  .blink-primary { background: #d9684e; }
+  .blink-mode-trigger { border-left-color: #444b58 !important; background: #151a22; color: #f8f4ef; }
+  .blink-menu { border-color: #414957; background: #171d26; color: #f8f4ef; }
+  .blink-mode-item { color: #f8f4ef; }
+  .blink-mode-item:hover, .blink-mode-item[aria-checked="true"] { background: #28303b; }
+  .blink-mode-item small { color: #b8c0cd; }
+}

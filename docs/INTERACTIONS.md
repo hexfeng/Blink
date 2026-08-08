@@ -9,7 +9,7 @@
 ```mermaid
 stateDiagram-v2
     [*] --> Hidden
-    Hidden --> Ready: 发现并启用有效输入框
+    Hidden --> Ready: 有效输入框聚焦或已有草稿
     Ready --> Hidden: 输入框消失、禁用或离开视口
 
     Ready --> MenuOpen: 点击模式箭头
@@ -26,7 +26,7 @@ stateDiagram-v2
     Loading --> Hidden: 输入框被移除或页面离开
 
     Success --> Ready: 点击撤销
-    Success --> Ready: 用户编辑、再次优化、发送或切换会话
+    Success --> Ready: 用户编辑、发送或切换会话
     Success --> Hidden: 输入框被移除或页面离开
 
     Error --> Ready: 提示消失或用户继续操作
@@ -44,7 +44,7 @@ stateDiagram-v2
 | Ready | `[✦ Blink] [模式⌄]` | 优化、切换模式 |
 | MenuOpen | 模式菜单展开 | 选择模式、关闭菜单 |
 | Loading | 加载动画，Blink 按钮禁用 | 用户仍可编辑或发送原草稿 |
-| Success | `已优化 · 撤销` | 撤销或继续编辑 |
+| Success | 原胶囊切换为 `[✓ 已优化] [撤销]` | 撤销或继续编辑 |
 | Error | 短暂错误提示 | 修正设置或重试 |
 | Recovery | 持续显示原文恢复卡 | 恢复输入框或复制原文 |
 
@@ -70,7 +70,7 @@ sequenceDiagram
     alt S1 等于 S0
         Content->>Editor: 写入优化结果并同步编辑事件
         Content->>Content: 保存单步撤销数据
-        Content-->>User: 显示“已优化 · 撤销”
+        Content-->>User: 原胶囊切换为“✓ 已优化｜撤销”
     else S1 不等于 S0
         Content-->>User: 显示“草稿已变化，请重试”
     end
@@ -156,12 +156,16 @@ flowchart TD
 
 - 左侧主按钮执行当前模式。
 - 右侧箭头只打开模式菜单，不立即优化。
+- 胶囊默认位于输入框右下外侧 8px，空间不足时翻转到上方并限制在视口内。
+- 输入框空且失焦时隐藏；聚焦或已有草稿时显示。
 - 模式菜单使用键盘可访问：方向键移动、Enter 选择、Escape 关闭。
 - 加载期间主按钮和模式选择均禁用，避免请求与模式不一致。
+- 成功后不弹出第二个成功框；原胶囊左侧显示图标与“已优化”，右侧只保留“撤销”。
+- 成功态不能再次优化或调整模式；撤销、用户编辑、发送或切换会话后回到 Ready。
 
 ### 提示消息
 
-- 成功和普通错误提示在 4 秒后消失。
+- 相同结果和普通错误提示在 4 秒后消失。
 - “撤销”在失效前持续显示，不使用自动倒计时。
 - 设置类错误提供“打开设置”操作。
 - 错误提示不得遮挡原网站的发送、附件或语音按钮。
@@ -183,7 +187,6 @@ flowchart TD
 | Provider 返回无效 JSON | Loading → Error | 保留原文，不自动重试 |
 | 写回后读回不一致 | Loading → Error/Recovery | 自动恢复原文；恢复仍失败则持续展示可复制原文恢复卡 |
 | 优化后用户手动编辑 | Success → Ready | 清除撤销记录 |
-| 优化后再次点击 Blink | Success → Loading | 清除旧撤销记录，以当前文本建立新快照 |
 | 自定义模式被删除 | 任意非 Loading 状态 → Ready | 回退到自动模式 |
 | Provider 配置被清除 | Ready → Ready | 点击时引导打开设置 |
 

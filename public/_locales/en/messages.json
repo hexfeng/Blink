@@ -1,0 +1,5 @@
+{
+  "extensionName": { "message": "Blink" },
+  "extensionDescription": { "message": "Rewrite AI prompts where you type, with safe replacement and undo." },
+  "openSettings": { "message": "Open Blink settings" }
+}

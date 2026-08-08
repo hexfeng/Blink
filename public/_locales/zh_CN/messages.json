@@ -1,0 +1,5 @@
+{
+  "extensionName": { "message": "Blink" },
+  "extensionDescription": { "message": "在 AI 输入框旁安全优化提示词，支持替换校验与撤销。" },
+  "openSettings": { "message": "打开 Blink 设置" }
+}

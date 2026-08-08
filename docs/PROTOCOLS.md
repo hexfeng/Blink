@@ -68,6 +68,8 @@ interface CustomMode {
 
 ## 3. 扩展内部消息
 
+`storage.local` 与 `storage.sync` 均限制为 `TRUSTED_CONTEXTS`。Content Script 通过 `GET_PUBLIC_SETTINGS` 获取不含凭据的活动模式和自定义模式，通过 `SET_ACTIVE_MODE` 更新选择；Options Page 修改模式后，Service Worker 向已注入页面广播 `PUBLIC_SETTINGS_CHANGED`。这些消息永不包含 Provider 配置或 API Key。
+
 ### 3.1 优化请求
 
 Content Script → Service Worker：
@@ -91,7 +93,7 @@ Service Worker 还必须检查 `sender`：`OPTIMIZE` 只接受来自已授权支
 
 - `requestId` 是扩展生成的 UUID。
 - `text` 去除首尾空白后非空。
-- `text.length <= 12_000`。
+- `text.length <= 6_000`。
 - 内置模式在固定集合中。
 - 自定义模式 ID 必须存在。
 
@@ -156,7 +158,7 @@ type TestProviderResponse =
   | { ok: false; error: OptimizeFailure["error"] };
 ```
 
-测试请求使用同一 Provider 适配器，但发送最短请求，期望模型返回 `OK`。测试成功不代表 Prompt 质量合格，只代表权限、地址和模型基本可调用。
+测试请求使用同一 Provider 适配器，但发送最短请求。25 秒内收到可解析的非空文本响应即为成功，不要求模型严格返回 `OK`。测试成功不代表 Prompt 质量合格，只代表权限、地址和模型基本可调用。
 
 ## 4. Provider 标准化协议
 
@@ -185,7 +187,7 @@ interface ProviderRequest {
 固定值：
 
 - `temperature = 0.2`。
-- `maxOutputTokens` 根据输入长度计算并设置上限，不暴露给普通设置。
+- `maxOutputTokens = 8_192`，不暴露给普通设置。
 - 不启用工具调用、联网搜索、图像生成或流式输出。
 - P0 不自动重试，避免重复费用和不可预测延迟。
 
@@ -206,7 +208,7 @@ Content-Type: application/json
   ],
   "temperature": 0.2,
   "stream": false,
-  "max_tokens": 1200
+  "max_tokens": 8192
 }
 ```
 
@@ -227,7 +229,7 @@ Content-Type: application/json
   "system": "{system}",
   "messages": [{ "role": "user", "content": "{user}" }],
   "temperature": 0.2,
-  "max_tokens": 1200
+  "max_tokens": 8192
 }
 ```
 
@@ -249,7 +251,7 @@ Content-Type: application/json
   "store": false,
   "generation_config": {
     "temperature": 0.2,
-    "max_output_tokens": 1200
+    "max_output_tokens": 8192
   }
 }
 ```
@@ -379,7 +381,7 @@ User Message 使用 JSON 序列化，禁止字符串拼接：
 | 5xx | `PROVIDER_ERROR` | 是 |
 | 200 但内容无法解析 | `INVALID_RESPONSE` | 是 |
 
-超时建议为 30 秒。错误详情仅在开发构建的控制台显示，且必须先删除请求头和 API Key。
+超时固定为 25 秒，由 `AbortController` 中止，不自动重试。错误详情仅在开发构建的控制台显示，且必须先删除请求头和 API Key。
 
 ## 9. 外部规范基线
 

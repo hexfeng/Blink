@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blink editor fixture</title>
+    <style>
+      body { max-width: 720px; margin: 40px auto; font: 16px/1.5 system-ui; }
+      textarea, [contenteditable] { display: block; width: 100%; min-height: 80px; margin: 8px 0 20px; padding: 12px; border: 1px solid #aaa; }
+      button { margin-right: 8px; padding: 8px 12px; }
+    </style>
+  </head>
+  <body>
+    <label for="fixture-textarea">Textarea</label>
+    <textarea id="fixture-textarea">Original textarea</textarea>
+    <div id="rich-host"></div>
+    <button id="write-textarea" type="button">Write textarea</button>
+    <button id="write-rich" type="button">Write rich editor</button>
+    <button id="remount-rich" type="button">Remount rich editor</button>
+    <output id="events">0</output>
+    <script type="module" src="/fixture.ts"></script>
+  </body>
+</html>
