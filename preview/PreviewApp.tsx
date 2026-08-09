@@ -15,7 +15,8 @@ export function PreviewApp() {
     selectMode: async () => setMenuOpen(false),
     openSettings: () => undefined,
     restoreOriginal: () => setPhase("ready"),
-    copyOriginal: async () => undefined
+    copyOriginal: async () => undefined,
+    setOverlayActive: () => undefined
   }) as unknown as BlinkController, []);
   if (params.get("view") === "options") return <OptionsApp demo />;
   const state: OverlayState = {

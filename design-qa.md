@@ -1,50 +1,72 @@
-# Blink Design QA
+# Blink minimal UI design QA
 
-## Evidence
+## Comparison target
 
-- Source visual truth: `D:\Projects\Blink\docs\assets\blink-editorial-companion-success-pill.png`
-- Source pixels: 1485 × 1059. This is a composite design board rather than one application viewport.
-- Browser-rendered Options screenshot: `D:\Projects\Blink\docs\qa\options-implementation-final.png`
-- Browser-rendered success screenshot: `D:\Projects\Blink\docs\qa\success-implementation-final.png`
-- Full comparison input: `D:\Projects\Blink\docs\qa\full-comparison.png`
-- Focused 200% comparison input: `D:\Projects\Blink\docs\qa\success-comparison.png`
-- Options viewport: 1485 × 1059 CSS px, implementation screenshot 1486 × 1059 pixels, device scale factor 1.
-- Success viewport: 800 × 500 CSS px, device scale factor 1. The component is rendered at 2× to reproduce the design board's 200% inset.
-- State: first-use Options plus the requested Chinese success pill `[✓ 已优化] [撤销]`.
+- Source visual truth: `C:\Users\PC\AppData\Local\Temp\codex-clipboard-b0fee2ae-8442-421c-94bf-a4b97cc60f7a.png`
+- Normalized source copy: `D:\Projects\Blink\artifacts\reference-minimal-ui.png`
+- Options implementation screenshot: `D:\Projects\Blink\artifacts\options-minimal-viewport.png`
+- Ribbon implementation screenshots: `D:\Projects\Blink\artifacts\ui-menu-focused.png`, `D:\Projects\Blink\artifacts\ui-loading.png`, `D:\Projects\Blink\artifacts\ui-error.png`, `D:\Projects\Blink\artifacts\ui-recovery.png`, `D:\Projects\Blink\artifacts\ui-success.png`
+- Full-view comparison evidence: `D:\Projects\Blink\artifacts\design-comparison.png`
+- Focused ribbon comparison evidence: `D:\Projects\Blink\artifacts\ribbon-comparison.png`
 
-The source board and implementation screenshot were joined into the same full comparison input. Because the board contains many states and an inset Options page, focused comparison was required for the success pill; separate screenshots alone were not used as the acceptance evidence.
+## Viewport and normalization
 
-## Findings
+- Source pixels: 1487 × 1058.
+- Options capture: 1425 × 990 PNG from a 1440 × 1000 CSS viewport; the in-app browser excluded scrollbar chrome. Browser device pixel ratio reported 1.25, while the screenshot API returned CSS-pixel-normalized output.
+- Focused ribbon capture: 200 × 177 PNG from a 200 × 177 CSS clip, displayed at 2× only in the comparison board so typography and dividers could be inspected.
+- 200% state capture: 800 × 500 PNG from an 800 × 500 CSS viewport; rendered pill bounds were x=448, y=297.2, width=311.2, height=72, right=759.2, bottom=369.2.
+- Options 200% equivalent-width capture: `D:\Projects\Blink\artifacts\options-200-effective.png` at a 640 × 900 CSS viewport; document client width and scroll width both measured 625px, confirming no horizontal overflow.
+- No density resampling was needed for pass/fail judgment. The full comparison normalized both images to equal column widths; the focused comparison enlarged only the implementation ribbon and explicitly labeled that scale.
 
-No actionable P0, P1, or P2 visual differences remain.
+## States and interactions checked
 
-- Fonts and typography: the implementation preserves the editorial serif headings and neutral sans-serif control text. The success label uses the reference's outlined check and restrained weight. The implementation keeps 14px base injected text and a 42px pill for zoom accessibility, so its 200% pill is slightly larger than the raster reference; this is an accepted accessibility constraint.
-- Spacing and layout rhythm: the 8px editor gap, above/below flip, viewport bounds, section rhythm, tinted headers, sidebar, radii, borders, and elevation match the selected direction. The source Options view is an inset board while the implementation is a full-tab page, so proportional differences caused by that framing are not treated as drift.
-- Colors and visual tokens: warm white, navy, terracotta, sage, gold, and blue are retained. Several text and button tokens were darkened slightly after axe found WCAG AA failures; the semantic palette remains unchanged.
-- Image quality and asset fidelity: the generated Blink icon is used as a real PNG asset. Interface icons use Phosphor; no inline SVG, emoji, CSS illustration, or placeholder art replaces visible source assets.
-- Copy and content: English and Chinese product copy are coherent. The source board shows configured and verified examples, while the first-use implementation honestly shows unconfigured and externally blocked states because no API key or authenticated real-site evidence is available.
-- Interaction and accessibility: browser checks covered opening/closing the mode menu, success-to-ready undo, first-use Options rendering, 200% viewport containment, and zero new console warnings/errors. Keyboard activation of Undo is covered by the component test. axe reports no serious or critical violations on the built Options page.
+- Options page at 1440 × 1000 and 800 × 1000.
+- Ribbon ready/menu, loading, success/undo, ordinary error/open settings, and recovery states in Chinese on a dark host.
+- Success state at 200% zoom.
+- Mode selection by pointer and keyboard Enter, success Undo, Options Add mode dialog open/close.
+- Browser console checked after the final interaction pass: no errors.
 
-## Comparison History
+## Required fidelity surfaces
 
-1. Initial P1: success appeared in a second feedback popover while the original pill remained. Fix: removed the success popover and made the pill itself switch to optimized/undo.
-2. Initial P2: success pill was too wide and the Options model form used a generic two-column layout without the selected tinted section bars. Fix: tightened success sizing and aligned the Options form, headers, and brand asset to the selected editorial design.
-3. Second-pass P2: the 200% QA rendering extended beyond the viewport. Fix: corrected the zoom fixture anchor and added production viewport-bound positioning tests. Post-fix success bounds are approximately 299 × 84 pixels with its bottom at 479px in a 500px viewport.
-4. Accessibility P1: axe found unlabeled site switches plus serious contrast failures. Fix: added per-site accessible names and darkened affected semantic tokens. Post-fix axe scan has no serious or critical violations.
-5. Final browser pass: source and final implementation were recombined after the fixes; no P0/P1/P2 differences remained. Focused comparison was retained because the success component is too small to judge reliably in the full board.
+- Fonts and typography: retained the product's Inter / Noto Sans SC / Segoe UI stack; reduced display styling and serif use; headings, labels, status text, and truncation remain legible at normal and 200% scale.
+- Spacing and layout rhythm: matches the reference's compact segmented ribbon, thin dividers, narrow readiness rail, and three numbered settings sections. Radii are 5–8px and shadows are limited to shallow separation.
+- Colors and visual tokens: removed terracotta and pastel section colors. The implementation uses black, white, neutral gray, one green success/focus token, red for ordinary errors, and yellow only for recovery.
+- Image quality and assets: retained the supplied Blink raster icon and the existing Phosphor icon set; no placeholder, CSS-drawn, handcrafted SVG, or generated visual asset was introduced.
+- Copy and content: existing localized product copy and safety disclosures were preserved. English expansion fits the options form; Chinese ribbon labels fit without clipping.
+- Accessibility: semantic buttons, menu roles, focus rings, keyboard selection, reduced-motion handling, and no 200% viewport clipping were verified.
 
-## Primary Browser Checks
+## Comparison history
 
-- Success displays exactly one pill and no `.blink-feedback--success`.
-- Clicking Undo returns the preview to Blink/Auto Ready.
-- Mode menu exposes three `menuitemradio` choices and closes after selection.
-- Chinese success at 200% remains fully inside an 800 × 500 viewport.
-- First-use Options exposes the three required regions with no browser console warnings/errors.
-- Built Chrome MV3 Options page loads from the unpacked output.
+### Iteration 1 — blocked
 
-## Residual Test Gaps
+- [P1] Preview focus generated a console error because the demo controller did not implement `setOverlayActive`.
+  - Fix: added the no-op demo callback so the preview exercises the production component contract without throwing.
+- [P2] The first menu pass was 268px wide and kept two-line descriptions, making it visibly less restrained than the source.
+  - Fix: reduced the menu to 176px, converted every mode to a compact single-line row, and preserved icons and the selected-state check.
+- [P2] Browser keyboard Enter did not close the menu in the preview.
+  - Fix: added explicit Enter/Space handling to menu items and added a unit regression test.
 
-- Authenticated real-site DOM and three real BYOK Provider runs require user-supplied accounts and keys. Every unverified site remains `externalBlocked`; the UI does not claim support.
-- The generated board is a composite rather than a pixel-exact single-screen specification, so full-page comparison is directional while the focused success comparison is state-exact.
+### Iteration 2 — blocked
+
+- Post-fix focused evidence: `D:\Projects\Blink\artifacts\ribbon-comparison.png` shows the source and implementation sharing the same black segmented ribbon, compact dimensions, one-pixel separators, and limited semantic color.
+- Post-fix full-view evidence: `D:\Projects\Blink\artifacts\design-comparison.png` shows the Options page preserving the source hierarchy while deliberately removing pastel section panels and decorative editorial typography.
+- Keyboard Enter now closes the menu, Undo returns to the ready state, the Options dialog opens and closes, and the final browser console contains no errors.
+- [P2] The Options page still declared a 720px body minimum width, which could force horizontal scrolling at 200% browser zoom on a 1280px desktop viewport.
+  - Fix: reduced the body minimum width to 320px and re-ran the layout at a 640px CSS viewport.
+
+### Iteration 3 — passed
+
+- Post-fix evidence: `D:\Projects\Blink\artifacts\options-200-effective.png` shows the stacked layout at 640px; document client width and scroll width are both 625px and the console is clear.
+- No actionable P0, P1, or P2 differences remain.
+
+## Accepted intentional differences
+
+- The implementation menu follows the host/browser dark color scheme, while the source's menu example is shown on a light host. The ribbon shape, density, selection, and hierarchy remain aligned.
+- The implementation keeps the existing site verification notes and all 16 product rows because they are product-state evidence, even though the source crop shows only a shorter example list.
+- The redesign is intentionally more restrained than the reference: no pastel section fills, no serif headings, and no green primary button outside semantic success/focus states.
+
+## Follow-up polish
+
+- [P3] A future brand pass could replace the small warm-colored app icon with a monochrome export. This was not changed because the supplied image is the current product asset and asset creation was outside this UI-only request.
 
 final result: passed

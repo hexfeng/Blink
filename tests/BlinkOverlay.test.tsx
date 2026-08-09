@@ -46,6 +46,18 @@ describe("BlinkOverlay success state", () => {
     expect(controller.selectMode).toHaveBeenCalledWith("professional");
   });
 
+  it("selects a mode from the keyboard", async () => {
+    const user = userEvent.setup();
+    vi.mocked(controller.selectMode).mockClear();
+    const state: OverlayState = { visible: true, phase: "ready", menuOpen: true, settings: DEFAULT_SETTINGS };
+    render(<BlinkOverlay controller={controller} state={state} locale="en" />);
+
+    const professional = screen.getByRole("menuitemradio", { name: /Professional/ });
+    professional.focus();
+    await user.keyboard("{Enter}");
+    expect(controller.selectMode).toHaveBeenCalledWith("professional");
+  });
+
   it("keeps the overlay active while the pointer moves from the editor to its controls", () => {
     vi.mocked(controller.setOverlayActive).mockClear();
     const state: OverlayState = { visible: true, phase: "ready", menuOpen: false, settings: DEFAULT_SETTINGS };

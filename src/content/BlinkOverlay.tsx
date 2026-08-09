@@ -77,6 +77,11 @@ export function BlinkOverlay({ controller, state, locale }: Props) {
                   aria-checked={item.id === state.settings.activeModeId}
                   key={item.id}
                   onClick={() => void controller.selectMode(item.id)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    void controller.selectMode(item.id);
+                  }}
                 >
                   <Icon size={18} weight="regular" aria-hidden="true" />
                   <span><strong>{item.label}</strong><small>{item.description}</small></span>
@@ -87,23 +92,6 @@ export function BlinkOverlay({ controller, state, locale }: Props) {
           </div>
         ) : null}
 
-        {state.phase === "loading" ? (
-          <div className="blink-feedback blink-feedback--info" aria-live="polite">
-            <SpinnerGap className="blink-spinner" size={17} aria-hidden="true" /> {t("optimizing")}
-          </div>
-        ) : null}
-        {state.phase === "same" ? (
-          <div className="blink-feedback blink-feedback--info" aria-live="polite">
-            <CheckCircle size={17} aria-hidden="true" /> {state.localMessage === "copied" ? t("copied") : t("sameResult")}
-          </div>
-        ) : null}
-        {state.phase === "error" ? (
-          <div className="blink-feedback blink-feedback--error" aria-live="polite">
-            <WarningCircle size={17} weight="fill" aria-hidden="true" />
-            <span>{message}</span>
-            {settingsError ? <button type="button" onClick={() => controller.openSettings()}><Gear size={15} aria-hidden="true" />{t("openSettings")}</button> : null}
-          </div>
-        ) : null}
         {state.phase === "recovery" ? (
           <div className="blink-recovery" role="alert">
             <div><WarningCircle size={18} weight="fill" aria-hidden="true" /><strong>{t("cannotRestore")}</strong></div>
@@ -114,7 +102,7 @@ export function BlinkOverlay({ controller, state, locale }: Props) {
           </div>
         ) : null}
 
-        <div className={`blink-pill${state.phase === "loading" ? " blink-pill--disabled" : ""}${state.phase === "success" ? " blink-pill--success" : ""}`}>
+        {state.phase !== "recovery" ? <div className={`blink-pill blink-pill--${state.phase}`}>
           {state.phase === "success" ? (
             <>
               <div className="blink-success-label" aria-live="polite">
@@ -123,9 +111,25 @@ export function BlinkOverlay({ controller, state, locale }: Props) {
               </div>
               <button type="button" className="blink-undo" onClick={() => controller.undoLast()}>{t("undo")}</button>
             </>
+          ) : state.phase === "loading" ? (
+            <>
+              <div className="blink-primary blink-primary--static"><Sparkle size={17} weight="fill" aria-hidden="true" /><span>Blink</span></div>
+              <div className="blink-feedback blink-feedback--info" aria-live="polite"><SpinnerGap className="blink-spinner" size={16} aria-hidden="true" /><span>{t("optimizing")}</span></div>
+            </>
+          ) : state.phase === "same" ? (
+            <>
+              <button type="button" className="blink-primary" onClick={() => void controller.optimize()}><Sparkle size={17} weight="fill" aria-hidden="true" /><span>Blink</span></button>
+              <div className="blink-feedback blink-feedback--info" aria-live="polite"><CheckCircle size={16} aria-hidden="true" /><span>{state.localMessage === "copied" ? t("copied") : t("sameResult")}</span></div>
+            </>
+          ) : state.phase === "error" ? (
+            <>
+              <button type="button" className="blink-primary" onClick={() => void controller.optimize()}><Sparkle size={17} weight="fill" aria-hidden="true" /><span>Blink</span></button>
+              <div className="blink-feedback blink-feedback--error" aria-live="polite"><WarningCircle size={16} weight="fill" aria-hidden="true" /><span>{message}</span></div>
+              {settingsError ? <button className="blink-feedback-action" type="button" onClick={() => controller.openSettings()}><Gear size={15} aria-hidden="true" />{t("openSettings")}</button> : null}
+            </>
           ) : (
             <>
-              <button type="button" className="blink-primary" onClick={() => void controller.optimize()} disabled={state.phase === "loading"}>
+              <button type="button" className="blink-primary" onClick={() => void controller.optimize()}>
                 <Sparkle size={18} weight="fill" aria-hidden="true" />
                 <span>Blink</span>
               </button>
@@ -135,14 +139,13 @@ export function BlinkOverlay({ controller, state, locale }: Props) {
                 aria-haspopup="menu"
                 aria-expanded={state.menuOpen}
                 onClick={() => controller.setMenuOpen(!state.menuOpen)}
-                disabled={state.phase === "loading"}
               >
                 <span>{activeMode?.label ?? t("auto")}</span>
                 <CaretDown size={15} weight="bold" aria-hidden="true" />
               </button>
             </>
           )}
-        </div>
+        </div> : null}
       </div>
     </div>
   );
