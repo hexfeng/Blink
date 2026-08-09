@@ -24,7 +24,6 @@ export default defineContentScript({
     if (!site) return;
     window.__BLINK_MOUNTED__ = true;
     let shadowHost: HTMLElement | null = null;
-    let controller: BlinkController | undefined;
 
     function position(anchor: HTMLElement | null) {
       if (!shadowHost || !anchor) {
@@ -50,16 +49,16 @@ export default defineContentScript({
         let state: OverlayState = { visible: false, phase: "ready", menuOpen: false, settings: { schemaVersion: 1, activeModeId: "auto", customModes: [] } };
         const root = ReactDOM.createRoot(app);
         const mountedController = new BlinkController(site, position);
-        controller = mountedController;
         const unsubscribe = mountedController.subscribe((next) => {
           state = next;
           root.render(<BlinkOverlay controller={mountedController} state={state} />);
         });
         void mountedController.start();
-        return { root, unsubscribe };
+        return { root, controller: mountedController, unsubscribe };
       },
       onRemove(mounted) {
         mounted?.unsubscribe();
+        mounted?.controller.teardown();
         mounted?.root.unmount();
         shadowHost = null;
       }
@@ -68,14 +67,12 @@ export default defineContentScript({
     ui.mount();
     const teardown = (message: TeardownSiteRequest | { type?: string }) => {
       if (message.type !== "TEARDOWN_SITE") return;
-      controller?.teardown();
       ui.remove();
       window.__BLINK_MOUNTED__ = false;
     };
     browser.runtime.onMessage.addListener(teardown);
     ctx.onInvalidated(() => {
       browser.runtime.onMessage.removeListener(teardown);
-      controller?.teardown();
       window.__BLINK_MOUNTED__ = false;
     });
   }
