@@ -145,7 +145,6 @@ Options Page → Service Worker：
 ```ts
 interface TestProviderRequest {
   type: "TEST_PROVIDER";
-  config: ProviderConfig;
 }
 ```
 
@@ -161,6 +160,19 @@ type TestProviderResponse =
 
 测试请求使用同一 Provider 适配器，但发送最短请求。25 秒内收到可解析的非空文本响应即为成功，不要求模型严格返回 `OK`。测试成功不代表 Prompt 质量合格，只代表权限、地址和模型基本可调用。
 
+### 3.5 列出 Provider 模型
+
+Options Page → Service Worker：
+
+```ts
+interface ListModelsRequest {
+  type: "LIST_MODELS";
+  config: Omit<ProviderConfig, "schemaVersion">;
+}
+```
+
+该消息只接受来自本扩展 Options Page 的请求。Options Page 必须在用户点击“刷新模型”时申请当前 Base URL 的精确 Origin 权限；Service Worker 再次校验配置与权限后，分别读取 OpenAI-compatible 的 `models`、Anthropic 的 `v1/models` 或 Gemini 的 `v1beta/models`。响应去重并最多返回 100 个模型，不保存刷新结果，也不向 Content Script 暴露 API Key 或模型目录。
+
 ## 4. Provider 标准化协议
 
 `baseUrl` 表示 Provider 的 API 根路径，不包含本节追加的资源路径。示例：
@@ -171,7 +183,7 @@ type TestProviderResponse =
 | Anthropic | `https://api.anthropic.com` |
 | Gemini | `https://generativelanguage.googleapis.com` |
 
-设置页的官方预设只负责填入建议 Base URL，用户仍需填写模型名称；自定义 Provider 不做模型发现。
+设置页为内置 Provider 提供小型推荐模型目录，同时保留可编辑的自定义模型 ID。自定义 OpenAI-compatible Base URL 不继承 OpenAI 推荐项；用户可主动刷新该 Provider 的模型目录。Provider 返回模型只表示该凭据可见，不代表 Blink 已验证其文本生成协议、参数或输出格式。
 
 内部统一请求：
 

@@ -2,10 +2,10 @@ import { browser } from "wxt/browser";
 import { CONTENT_SCRIPT_FILE, CONTENT_SCRIPT_ID } from "../src/lib/constants";
 import { safeError } from "../src/lib/errors";
 import { buildProviderPrompt, parseOptimizedResponse } from "../src/lib/prompts";
-import { openAiTuningForMode, ProviderFailure, requestProvider, testProvider } from "../src/lib/providers";
+import { listProviderModels, openAiTuningForMode, ProviderFailure, requestProvider, testProvider } from "../src/lib/providers";
 import { SITE_PATTERNS, findSiteByUrl, originPattern } from "../src/lib/sites";
 import { clearProviderConfig, getProviderConfig, getSettings, resetStorage, restrictStorageAccess, setProviderConfig, setSettings } from "../src/lib/storage";
-import type { CommandResponse, InternalRequest, OptimizeResponse, SyncedSettings } from "../src/lib/types";
+import type { CommandResponse, InternalRequest, ModelListResponse, OptimizeResponse, SyncedSettings } from "../src/lib/types";
 import { normalizeProviderConfig, validateDraft, ValidationError } from "../src/lib/validation";
 
 const activeRequests = new Map<string, { requestId: string; controller: AbortController }>();
@@ -120,7 +120,7 @@ async function handleOptimize(message: Extract<InternalRequest, { type: "OPTIMIZ
   }
 }
 
-async function handleMessage(message: InternalRequest, sender: Browser.runtime.MessageSender): Promise<OptimizeResponse | CommandResponse | { ok: true; settings: SyncedSettings }> {
+async function handleMessage(message: InternalRequest, sender: Browser.runtime.MessageSender): Promise<OptimizeResponse | CommandResponse | ModelListResponse | { ok: true; settings: SyncedSettings }> {
   if (!message || typeof message !== "object" || typeof message.type !== "string") return { ok: false, error: safeError("INVALID_REQUEST") };
   if (message.type === "OPTIMIZE") return handleOptimize(message, sender);
   if (message.type === "CANCEL_OPTIMIZE") {
@@ -163,6 +163,16 @@ async function handleMessage(message: InternalRequest, sender: Browser.runtime.M
       return { ok: true };
     } catch (error) {
       return { ok: false, error: error instanceof ProviderFailure ? error.safeError : safeError("PROVIDER_ERROR") };
+    }
+  }
+  if (message.type === "LIST_MODELS") {
+    try {
+      const config = normalizeProviderConfig(message.config);
+      if (!(await browser.permissions.contains({ origins: [originPattern(config.baseUrl)] }))) return { ok: false, error: safeError("HOST_PERMISSION_REQUIRED") };
+      return { ok: true, models: await listProviderModels(config) };
+    } catch (error) {
+      if (error instanceof ProviderFailure) return { ok: false, error: error.safeError };
+      return { ok: false, error: safeError(error instanceof ValidationError ? "INVALID_REQUEST" : "PROVIDER_ERROR") };
     }
   }
   if (message.type === "CLEAR_PROVIDER") {

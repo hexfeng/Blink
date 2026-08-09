@@ -134,10 +134,14 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    A[用户填写 Provider 配置] --> B[校验字段和 URL]
-    B --> C{字段是否合法}
-    C -- 否 --> D[显示字段错误]
-    C -- 是 --> E[请求精确 API Origin 权限]
+    A[用户选择 Provider 并填写 Base URL / API Key] --> B[选择推荐模型或输入自定义模型 ID]
+    B --> R{是否刷新 Provider 模型}
+    R -- 是 --> S[请求精确 API Origin 权限并读取模型列表]
+    S --> B
+    R -- 否 --> C[校验字段和 URL]
+    C --> V{字段是否合法}
+    V -- 否 --> D[显示字段错误]
+    V -- 是 --> E[请求精确 API Origin 权限]
     E --> F{用户是否授权}
     F -- 否 --> G[不保存并提示需要权限]
     F -- 是 --> H[保存至 storage.local]
@@ -149,6 +153,10 @@ flowchart TD
 ```
 
 保存与测试分离：离线时仍可保存有效配置；测试状态只描述最近一次测试结果，不作为长期可用性保证。
+
+模型输入框是可编辑组合框：默认展示当前 Provider 的推荐项，用户输入时过滤列表；自定义 OpenAI-compatible Base URL 不强行显示 OpenAI 模型，用户可直接输入模型 ID，或在授权 API Origin 后刷新 Provider 实际返回的模型列表。
+
+支持站点以卡片网格展示品牌图标、名称、域名、状态和开关；“全部 / 已启用”筛选与搜索只改变视图，不复制或改写 Chrome 权限状态。
 
 ## 7. 关键交互规则
 

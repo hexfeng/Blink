@@ -113,7 +113,8 @@ P0 同一时间只保存一个活动 Provider：
 - Provider 类型。
 - API Base URL。
 - API Key。
-- 模型名称。
+- 可输入、可搜索的模型选择器；内置 Provider 提供推荐模型，自定义模型 ID 始终可用。
+- 用户可从当前 Provider 刷新模型列表，刷新结果只用于本次设置页会话。
 - “测试连接”操作。
 
 首版 Provider 类型：
@@ -173,7 +174,7 @@ OpenAI-compatible 可接入 OpenAI、OpenRouter，以及提供兼容端点的 De
 - Provider 类型。
 - Base URL。
 - API Key，默认遮挡。
-- 模型名称。
+- 模型组合框：推荐项、Provider 返回项和自定义模型 ID。
 - 测试连接和保存。
 - 明确提示：API Key 仅保存在本机，但浏览器扩展存储不是硬件级安全密钥库。
 
@@ -184,8 +185,9 @@ OpenAI-compatible 可接入 OpenAI、OpenRouter，以及提供兼容端点的 De
 
 ### 支持站点
 
-- 站点授权开关。
-- 当前适配状态和最后验证的扩展版本。
+- 应用商店式站点卡片：品牌图标、名称、域名、状态和授权开关。
+- 支持按名称搜索，以及查看全部或仅已启用站点。
+- Chrome Host Permission 仍是站点启用状态的唯一事实来源。
 
 不提供外观主题、快捷键编辑、多 Provider 列表或用量统计。
 

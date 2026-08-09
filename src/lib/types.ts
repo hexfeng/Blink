@@ -8,6 +8,12 @@ export interface ProviderConfig {
   model: string;
 }
 
+export interface ProviderModel {
+  id: string;
+  name?: string;
+  description?: string;
+}
+
 export interface CustomMode {
   id: string;
   name: string;
@@ -65,6 +71,11 @@ export interface TestProviderRequest {
   type: "TEST_PROVIDER";
 }
 
+export interface ListModelsRequest {
+  type: "LIST_MODELS";
+  config: Omit<ProviderConfig, "schemaVersion">;
+}
+
 export interface ClearProviderRequest {
   type: "CLEAR_PROVIDER";
 }
@@ -96,6 +107,7 @@ export type InternalRequest =
   | CancelOptimizeRequest
   | SaveProviderRequest
   | TestProviderRequest
+  | ListModelsRequest
   | ClearProviderRequest
   | ResetExtensionRequest
   | GetPublicSettingsRequest
@@ -106,6 +118,7 @@ export type OptimizeResponse =
   | { ok: false; requestId: string; error: SafeError };
 
 export type CommandResponse = { ok: true } | { ok: false; error: SafeError };
+export type ModelListResponse = { ok: true; models: ProviderModel[] } | { ok: false; error: SafeError };
 
 export type VerificationStatus = "pendingVerification" | "verified" | "externalBlocked";
 

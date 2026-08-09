@@ -1,5 +1,5 @@
 import { MAX_OUTPUT_TOKENS, REQUEST_TIMEOUT_MS } from "./constants";
-import type { ErrorCode, ModeSelection, ProviderConfig, SafeError } from "./types";
+import type { ErrorCode, ModeSelection, ProviderConfig, ProviderModel, SafeError } from "./types";
 
 export type BenchmarkVariant = "baseline" | "candidate";
 
@@ -210,4 +210,48 @@ export async function testProvider(config: ProviderConfig, signal?: AbortSignal)
     ...(config.model === "gpt-5.6-luna" ? { openAiTuning: { reasoningEffort: "low" as const } } : {})
   }, signal);
   if (!result.trim()) throw new ProviderFailure(makeError("INVALID_RESPONSE", true));
+}
+
+function parseModelList(config: ProviderConfig, data: unknown): ProviderModel[] {
+  if (config.kind === "gemini") {
+    const models = (data as { models?: Array<{ name?: unknown; displayName?: unknown; description?: unknown; supportedGenerationMethods?: unknown }> })?.models;
+    if (!Array.isArray(models)) throw new ProviderFailure(makeError("INVALID_RESPONSE", true));
+    return models.flatMap((model) => {
+      if (typeof model.name !== "string") return [];
+      const methods = Array.isArray(model.supportedGenerationMethods) ? model.supportedGenerationMethods : [];
+      if (methods.length && !methods.some((method) => method === "generateContent" || method === "interactions")) return [];
+      return [{
+        id: model.name.replace(/^models\//u, ""),
+        ...(typeof model.displayName === "string" ? { name: model.displayName } : {}),
+        ...(typeof model.description === "string" ? { description: model.description } : {})
+      }];
+    });
+  }
+
+  const models = (data as { data?: Array<{ id?: unknown; display_name?: unknown }> })?.data;
+  if (!Array.isArray(models)) throw new ProviderFailure(makeError("INVALID_RESPONSE", true));
+  return models.flatMap((model) => typeof model.id === "string"
+    ? [{ id: model.id, ...(typeof model.display_name === "string" ? { name: model.display_name } : {}) }]
+    : []);
+}
+
+export async function listProviderModels(config: ProviderConfig): Promise<ProviderModel[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const url = config.kind === "openai-compatible"
+      ? endpoint(config.baseUrl, "models")
+      : config.kind === "anthropic"
+        ? endpoint(config.baseUrl, "v1/models?limit=100")
+        : endpoint(config.baseUrl, "v1beta/models?pageSize=100");
+    const headers = config.kind === "anthropic"
+      ? { "x-api-key": config.apiKey, "anthropic-version": "2023-06-01" }
+      : config.kind === "gemini"
+        ? { "x-goog-api-key": config.apiKey }
+        : { Authorization: `Bearer ${config.apiKey}` };
+    const models = parseModelList(config, await fetchJson(url, { method: "GET", headers }, controller.signal));
+    return [...new Map(models.map((model) => [model.id, model])).values()].slice(0, 100);
+  } finally {
+    clearTimeout(timeout);
+  }
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openAiTuningForMode, ProviderFailure, requestProvider, requestProviderDetailed, testProvider } from "../src/lib/providers";
+import { listProviderModels, openAiTuningForMode, ProviderFailure, requestProvider, requestProviderDetailed, testProvider } from "../src/lib/providers";
 import type { ProviderConfig } from "../src/lib/types";
 
 const baseConfig = { schemaVersion: 1 as const, apiKey: "secret-key", model: "test-model" };
@@ -47,6 +47,38 @@ describe("provider adapters", () => {
     expect(error).toBeInstanceOf(ProviderFailure);
     expect((error as ProviderFailure).safeError.code).toBe("UNAUTHORIZED");
     expect(JSON.stringify((error as ProviderFailure).safeError)).not.toContain("secret-key");
+  });
+
+  it.each([
+    {
+      kind: "openai-compatible" as const,
+      baseUrl: "https://gateway.example/v1",
+      response: { data: [{ id: "model-b" }, { id: "model-a" }] },
+      endpoint: "https://gateway.example/v1/models",
+      expected: [{ id: "model-b" }, { id: "model-a" }]
+    },
+    {
+      kind: "anthropic" as const,
+      baseUrl: "https://api.anthropic.example",
+      response: { data: [{ id: "claude-sonnet-5", display_name: "Claude Sonnet 5" }] },
+      endpoint: "https://api.anthropic.example/v1/models?limit=100",
+      expected: [{ id: "claude-sonnet-5", name: "Claude Sonnet 5" }]
+    },
+    {
+      kind: "gemini" as const,
+      baseUrl: "https://gemini.example",
+      response: { models: [{ name: "models/gemini-3.6-flash", displayName: "Gemini 3.6 Flash", supportedGenerationMethods: ["interactions"] }] },
+      endpoint: "https://gemini.example/v1beta/models?pageSize=100",
+      expected: [{ id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" }]
+    }
+  ])("lists models exposed by $kind", async ({ kind, baseUrl, response, endpoint, expected }) => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(response), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await listProviderModels({ ...baseConfig, kind, baseUrl });
+
+    expect(result).toEqual(expected);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(endpoint);
   });
 
   it("uses current token parameters for official OpenAI without sampling controls", async () => {
