@@ -2,7 +2,7 @@ import { browser } from "wxt/browser";
 import { CONTENT_SCRIPT_FILE, CONTENT_SCRIPT_ID } from "../src/lib/constants";
 import { safeError } from "../src/lib/errors";
 import { buildProviderPrompt, parseOptimizedResponse } from "../src/lib/prompts";
-import { ProviderFailure, requestProvider, testProvider } from "../src/lib/providers";
+import { openAiTuningForMode, ProviderFailure, requestProvider, testProvider } from "../src/lib/providers";
 import { SITE_PATTERNS, findSiteByUrl, originPattern } from "../src/lib/sites";
 import { clearProviderConfig, getProviderConfig, getSettings, resetStorage, restrictStorageAccess, setProviderConfig, setSettings } from "../src/lib/storage";
 import type { CommandResponse, InternalRequest, OptimizeResponse, SyncedSettings } from "../src/lib/types";
@@ -105,7 +105,11 @@ async function handleOptimize(message: Extract<InternalRequest, { type: "OPTIMIZ
   const controller = new AbortController();
   activeRequests.set(key, { requestId: message.requestId, controller });
   try {
-    const raw = await requestProvider(config, { ...prompt, requireOptimizedPromptJson: true }, controller.signal);
+    const raw = await requestProvider(config, {
+      ...prompt,
+      requireOptimizedPromptJson: true,
+      ...(config.model === "gpt-5.6-luna" ? { openAiTuning: openAiTuningForMode(message.mode) } : {})
+    }, controller.signal);
     const optimizedText = parseOptimizedResponse(raw, message.text);
     return { ok: true, requestId: message.requestId, optimizedText };
   } catch (error) {

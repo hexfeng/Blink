@@ -98,7 +98,7 @@ function sameMultiset(left: string[], right: string[]): boolean {
   return counts.size === 0;
 }
 
-export function parseOptimizedResponse(raw: string, input: string): string {
+export function parseOptimizedJson(raw: string): string {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw.trim());
@@ -110,6 +110,11 @@ export function parseOptimizedResponse(raw: string, input: string): string {
   if (Object.keys(record).length !== 1 || typeof record.optimized_prompt !== "string") throw new Error("Response must contain only optimized_prompt");
   const optimized = record.optimized_prompt;
   if (!optimized.trim()) throw new Error("Optimized prompt is empty");
+  return optimized;
+}
+
+export function parseOptimizedResponse(raw: string, input: string): string {
+  const optimized = parseOptimizedJson(raw);
   if (optimized.length > Math.max(input.length * 3, input.length + 4_000)) throw new Error("Optimized prompt is too long");
   if (!sameMultiset(extractUrls(input), extractUrls(optimized))) throw new Error("URL preservation failed");
   return optimized;

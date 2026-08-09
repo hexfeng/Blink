@@ -1,11 +1,34 @@
 import { MAX_OUTPUT_TOKENS, REQUEST_TIMEOUT_MS } from "./constants";
-import type { ErrorCode, ProviderConfig, SafeError } from "./types";
+import type { ErrorCode, ModeSelection, ProviderConfig, SafeError } from "./types";
 
-interface ProviderRequest {
+export type BenchmarkVariant = "baseline" | "candidate";
+
+export interface OpenAiTuning {
+  reasoningEffort: "none" | "low";
+  verbosity?: "low";
+}
+
+export interface ProviderRequest {
   system: string;
   user: string;
   maxOutputTokens?: number;
   requireOptimizedPromptJson?: boolean;
+  openAiTuning?: OpenAiTuning;
+}
+
+export interface ProviderUsage {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  reasoningTokens?: number;
+  cachedInputTokens?: number;
+}
+
+export interface ProviderResult {
+  text: string;
+  durationMs: number;
+  usage?: ProviderUsage;
+  finishReason?: string;
 }
 
 const OPTIMIZED_PROMPT_RESPONSE_FORMAT = {
@@ -60,10 +83,42 @@ async function fetchJson(url: string, init: RequestInit, signal: AbortSignal): P
   }
 }
 
-function parseOpenAi(data: unknown): string {
-  const content = (data as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content;
+interface OpenAiResponse {
+  choices?: Array<{ finish_reason?: unknown; message?: { content?: unknown } }>;
+  usage?: {
+    prompt_tokens?: unknown;
+    completion_tokens?: unknown;
+    total_tokens?: unknown;
+    prompt_tokens_details?: { cached_tokens?: unknown };
+    completion_tokens_details?: { reasoning_tokens?: unknown };
+  };
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function parseOpenAi(data: unknown): Omit<ProviderResult, "durationMs"> {
+  const response = data as OpenAiResponse;
+  const content = response?.choices?.[0]?.message?.content;
   if (typeof content !== "string" || !content.trim()) throw new ProviderFailure(makeError("INVALID_RESPONSE", true));
-  return content;
+  const usage = response.usage;
+  const parsedUsage: ProviderUsage = {};
+  const inputTokens = optionalNumber(usage?.prompt_tokens);
+  const outputTokens = optionalNumber(usage?.completion_tokens);
+  const totalTokens = optionalNumber(usage?.total_tokens);
+  const reasoningTokens = optionalNumber(usage?.completion_tokens_details?.reasoning_tokens);
+  const cachedInputTokens = optionalNumber(usage?.prompt_tokens_details?.cached_tokens);
+  if (inputTokens !== undefined) parsedUsage.inputTokens = inputTokens;
+  if (outputTokens !== undefined) parsedUsage.outputTokens = outputTokens;
+  if (totalTokens !== undefined) parsedUsage.totalTokens = totalTokens;
+  if (reasoningTokens !== undefined) parsedUsage.reasoningTokens = reasoningTokens;
+  if (cachedInputTokens !== undefined) parsedUsage.cachedInputTokens = cachedInputTokens;
+  return {
+    text: content,
+    ...(typeof response.choices?.[0]?.finish_reason === "string" ? { finishReason: response.choices[0].finish_reason } : {}),
+    ...(Object.keys(parsedUsage).length ? { usage: parsedUsage } : {})
+  };
 }
 
 function parseAnthropic(data: unknown): string {
@@ -81,7 +136,12 @@ function parseGemini(data: unknown): string {
   return text;
 }
 
-async function requestWithSignal(config: ProviderConfig, request: ProviderRequest, signal: AbortSignal): Promise<string> {
+export function openAiTuningForMode(mode: ModeSelection, variant: BenchmarkVariant = "candidate"): OpenAiTuning {
+  if (variant === "baseline" || (mode.type === "builtin" && mode.id === "professional")) return { reasoningEffort: "low" };
+  return { reasoningEffort: "none", verbosity: "low" };
+}
+
+async function requestWithSignal(config: ProviderConfig, request: ProviderRequest, signal: AbortSignal): Promise<Omit<ProviderResult, "durationMs">> {
   const maxTokens = request.maxOutputTokens ?? MAX_OUTPUT_TOKENS;
   if (config.kind === "openai-compatible") {
     const commonBody = {
@@ -94,7 +154,10 @@ async function requestWithSignal(config: ProviderConfig, request: ProviderReques
       ? {
           ...commonBody,
           max_completion_tokens: maxTokens,
-          ...(config.model === "gpt-5.6-luna" ? { reasoning_effort: "low" } : {}),
+          ...(config.model === "gpt-5.6-luna" && request.openAiTuning ? {
+            reasoning_effort: request.openAiTuning.reasoningEffort,
+            ...(request.openAiTuning.verbosity ? { verbosity: request.openAiTuning.verbosity } : {})
+          } : {}),
           ...(request.requireOptimizedPromptJson ? { response_format: OPTIMIZED_PROMPT_RESPONSE_FORMAT } : {})
         }
       : { ...commonBody, temperature: 0.2, max_tokens: maxTokens };
@@ -111,30 +174,40 @@ async function requestWithSignal(config: ProviderConfig, request: ProviderReques
       headers: { "x-api-key": config.apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
       body: JSON.stringify({ model: config.model, system: request.system, messages: [{ role: "user", content: request.user }], temperature: 0.2, max_tokens: maxTokens })
     }, signal);
-    return parseAnthropic(data);
+    return { text: parseAnthropic(data) };
   }
   const data = await fetchJson(endpoint(config.baseUrl, "v1/interactions"), {
     method: "POST",
     headers: { "x-goog-api-key": config.apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({ model: config.model, system_instruction: request.system, input: request.user, store: false, generation_config: { temperature: 0.2, max_output_tokens: maxTokens } })
   }, signal);
-  return parseGemini(data);
+  return { text: parseGemini(data) };
 }
 
-export async function requestProvider(config: ProviderConfig, request: ProviderRequest, externalSignal?: AbortSignal): Promise<string> {
+export async function requestProviderDetailed(config: ProviderConfig, request: ProviderRequest, externalSignal?: AbortSignal): Promise<ProviderResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const abortFromExternal = () => controller.abort();
   externalSignal?.addEventListener("abort", abortFromExternal, { once: true });
+  const startedAt = Date.now();
   try {
-    return await requestWithSignal(config, request, controller.signal);
+    return { ...(await requestWithSignal(config, request, controller.signal)), durationMs: Date.now() - startedAt };
   } finally {
     clearTimeout(timeout);
     externalSignal?.removeEventListener("abort", abortFromExternal);
   }
 }
 
+export async function requestProvider(config: ProviderConfig, request: ProviderRequest, externalSignal?: AbortSignal): Promise<string> {
+  return (await requestProviderDetailed(config, request, externalSignal)).text;
+}
+
 export async function testProvider(config: ProviderConfig, signal?: AbortSignal): Promise<void> {
-  const result = await requestProvider(config, { system: "Reply with a short plain-text acknowledgement.", user: "OK", maxOutputTokens: 256 }, signal);
+  const result = await requestProvider(config, {
+    system: "Reply with a short plain-text acknowledgement.",
+    user: "OK",
+    maxOutputTokens: 256,
+    ...(config.model === "gpt-5.6-luna" ? { openAiTuning: { reasoningEffort: "low" as const } } : {})
+  }, signal);
   if (!result.trim()) throw new ProviderFailure(makeError("INVALID_RESPONSE", true));
 }

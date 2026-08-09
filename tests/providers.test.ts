@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ProviderFailure, requestProvider, testProvider } from "../src/lib/providers";
+import { openAiTuningForMode, ProviderFailure, requestProvider, requestProviderDetailed, testProvider } from "../src/lib/providers";
 import type { ProviderConfig } from "../src/lib/types";
 
 const baseConfig = { schemaVersion: 1 as const, apiKey: "secret-key", model: "test-model" };
@@ -61,6 +61,52 @@ describe("provider adapters", () => {
     expect(body).not.toHaveProperty("temperature");
   });
 
+  it("maps the candidate and baseline Luna tuning by optimization mode", () => {
+    expect(openAiTuningForMode({ type: "builtin", id: "auto" })).toEqual({ reasoningEffort: "none", verbosity: "low" });
+    expect(openAiTuningForMode({ type: "builtin", id: "concise" })).toEqual({ reasoningEffort: "none", verbosity: "low" });
+    expect(openAiTuningForMode({ type: "custom", id: "custom-1" })).toEqual({ reasoningEffort: "none", verbosity: "low" });
+    expect(openAiTuningForMode({ type: "builtin", id: "professional" })).toEqual({ reasoningEffort: "low" });
+    expect(openAiTuningForMode({ type: "builtin", id: "auto" }, "baseline")).toEqual({ reasoningEffort: "low" });
+  });
+
+  it("sends candidate reasoning and verbosity only to official Luna", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await requestProvider(
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna" },
+      { system: "s", user: "u", openAiTuning: openAiTuningForMode({ type: "builtin", id: "auto" }) }
+    );
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).toMatchObject({ reasoning_effort: "none", verbosity: "low" });
+  });
+
+  it("captures latency and OpenAI usage without response content in the metrics", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      choices: [{ finish_reason: "stop", message: { content: "OK" } }],
+      usage: {
+        prompt_tokens: 120,
+        completion_tokens: 35,
+        total_tokens: 155,
+        prompt_tokens_details: { cached_tokens: 64 },
+        completion_tokens_details: { reasoning_tokens: 12 }
+      }
+    }), { status: 200 })));
+
+    const result = await requestProviderDetailed(
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna" },
+      { system: "s", user: "u", openAiTuning: { reasoningEffort: "none", verbosity: "low" } }
+    );
+
+    expect(result).toMatchObject({
+      text: "OK",
+      finishReason: "stop",
+      usage: { inputTokens: 120, outputTokens: 35, totalTokens: 155, cachedInputTokens: 64, reasoningTokens: 12 }
+    });
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
   it("uses a strict optimized-prompt schema for official OpenAI rewrite requests", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: '{"optimized_prompt":"result"}' } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
@@ -90,10 +136,14 @@ describe("provider adapters", () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await testProvider({ ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1" });
+    await requestProvider(
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1" },
+      { system: "s", user: "u", openAiTuning: { reasoningEffort: "none", verbosity: "low" } }
+    );
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body).not.toHaveProperty("reasoning_effort");
+    expect(body).not.toHaveProperty("verbosity");
   });
 
   it("keeps legacy token parameters for third-party OpenAI-compatible services", async () => {
@@ -102,13 +152,14 @@ describe("provider adapters", () => {
 
     await requestProvider(
       { ...baseConfig, kind: "openai-compatible", baseUrl: "https://gateway.example/proxy/v1", model: "deepseek-reasoner" },
-      { system: "system", user: "user", maxOutputTokens: 256 }
+      { system: "system", user: "user", maxOutputTokens: 256, openAiTuning: { reasoningEffort: "none", verbosity: "low" } }
     );
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body).toMatchObject({ model: "deepseek-reasoner", temperature: 0.2, max_tokens: 256 });
     expect(body).not.toHaveProperty("max_completion_tokens");
     expect(body).not.toHaveProperty("reasoning_effort");
+    expect(body).not.toHaveProperty("verbosity");
     expect(body).not.toHaveProperty("response_format");
   });
 

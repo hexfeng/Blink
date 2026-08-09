@@ -21,6 +21,16 @@ npm run build
 npm run test:e2e
 ```
 
+Luna Prompt A/B 基准使用独立的临时 API Key 环境变量，结果只写入已忽略的 `tmp/benchmarks/`：
+
+```powershell
+$env:BLINK_BENCHMARK_API_KEY = "仅用于本次测试的 Key"
+npm run benchmark:live
+Remove-Item Env:\BLINK_BENCHMARK_API_KEY
+```
+
+基准定义、指标和判定标准见 `docs/PERFORMANCE_BENCHMARK.md`。Key、原始 Prompt 和模型输出均不会写入报告。
+
 在 `chrome://extensions` 开启开发者模式，加载 `.output/chrome-mv3`。首次安装会自动打开设置页；Provider API Key 只保存在 `chrome.storage.local`，不得加入仓库、截图或日志。
 
 ## P0 边界
