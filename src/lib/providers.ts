@@ -94,6 +94,7 @@ async function requestWithSignal(config: ProviderConfig, request: ProviderReques
       ? {
           ...commonBody,
           max_completion_tokens: maxTokens,
+          ...(config.model === "gpt-5.6-luna" ? { reasoning_effort: "low" } : {}),
           ...(request.requireOptimizedPromptJson ? { response_format: OPTIMIZED_PROMPT_RESPONSE_FORMAT } : {})
         }
       : { ...commonBody, temperature: 0.2, max_tokens: maxTokens };

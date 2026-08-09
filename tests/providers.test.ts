@@ -37,6 +37,7 @@ describe("provider adapters", () => {
     const firstCall = fetchMock.mock.calls[0];
     expect(firstCall?.[0]).toBe(endpoint);
     const body = JSON.parse(String(firstCall?.[1]?.body));
+    expect(body).not.toHaveProperty("reasoning_effort");
     if (kind === "gemini") expect(body.store).toBe(false);
   });
 
@@ -55,7 +56,7 @@ describe("provider adapters", () => {
     await testProvider({ ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-5.6-luna" });
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
-    expect(body).toMatchObject({ model: "gpt-5.6-luna", stream: false, max_completion_tokens: 256 });
+    expect(body).toMatchObject({ model: "gpt-5.6-luna", stream: false, max_completion_tokens: 256, reasoning_effort: "low" });
     expect(body).not.toHaveProperty("max_tokens");
     expect(body).not.toHaveProperty("temperature");
   });
@@ -85,18 +86,29 @@ describe("provider adapters", () => {
     });
   });
 
+  it("does not assume other official OpenAI models support reasoning effort", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await testProvider({ ...baseConfig, kind: "openai-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1" });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).not.toHaveProperty("reasoning_effort");
+  });
+
   it("keeps legacy token parameters for third-party OpenAI-compatible services", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ choices: [{ message: { content: "OK" } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     await requestProvider(
-      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://gateway.example/proxy/v1" },
+      { ...baseConfig, kind: "openai-compatible", baseUrl: "https://gateway.example/proxy/v1", model: "deepseek-reasoner" },
       { system: "system", user: "user", maxOutputTokens: 256 }
     );
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
-    expect(body).toMatchObject({ temperature: 0.2, max_tokens: 256 });
+    expect(body).toMatchObject({ model: "deepseek-reasoner", temperature: 0.2, max_tokens: 256 });
     expect(body).not.toHaveProperty("max_completion_tokens");
+    expect(body).not.toHaveProperty("reasoning_effort");
     expect(body).not.toHaveProperty("response_format");
   });
 

@@ -215,7 +215,7 @@ Content-Type: application/json
 }
 ```
 
-当 `baseUrl` 的主机名为 `api.openai.com` 时，使用官方 OpenAI 当前参数：省略 `temperature`，并以 `"max_completion_tokens": 8192` 替代 `max_tokens`。优化请求同时使用严格 `json_schema` Structured Outputs，schema 只允许一个字符串字段 `optimized_prompt`；连接测试仍使用普通文本响应。第三方兼容端点继续使用上面的 `max_tokens` 和 Prompt 级 JSON 约束，不假定其支持 Structured Outputs，也不自动重试另一种参数。
+当 `baseUrl` 的主机名为 `api.openai.com` 时，使用官方 OpenAI 当前参数：省略 `temperature`，并以 `"max_completion_tokens": 8192` 替代 `max_tokens`。模型为 `gpt-5.6-luna` 时额外设置 `"reasoning_effort": "low"`；其他官方 OpenAI 模型不假定支持该取值，保留模型默认值。优化请求同时使用严格 `json_schema` Structured Outputs，schema 只允许一个字符串字段 `optimized_prompt`；连接测试仍使用普通文本响应。第三方兼容端点继续使用上面的 `temperature`、`max_tokens` 和 Prompt 级 JSON 约束，不发送 OpenAI 专用的 `reasoning_effort`，不假定其支持 Structured Outputs，也不自动重试另一种参数。
 
 解析 `choices[0].message.content`。
 
