@@ -6,12 +6,20 @@ function isTextArea(element: Element): element is HTMLTextAreaElement {
   return element instanceof HTMLTextAreaElement;
 }
 
+function isTextInput(element: Element): element is HTMLInputElement {
+  return element instanceof HTMLInputElement && (element.type === "text" || element.type === "search");
+}
+
+function isTextControl(element: Element): element is HTMLTextAreaElement | HTMLInputElement {
+  return isTextArea(element) || isTextInput(element);
+}
+
 export function isUsableEditor(element: Element, minHeight = 32): element is SupportedEditor {
   if (!(element instanceof HTMLElement)) return false;
   const rect = element.getBoundingClientRect();
   if (rect.width < 180 || rect.height < minHeight) return false;
   if (element.hidden || element.getAttribute("aria-hidden") === "true") return false;
-  if (isTextArea(element)) return !element.disabled && !element.readOnly;
+  if (isTextControl(element)) return !element.disabled && !element.readOnly;
   return element.isContentEditable && element.getAttribute("contenteditable") !== "false";
 }
 
@@ -30,12 +38,11 @@ export function findOverlayAnchor(editor: SupportedEditor, site: SiteDescriptor)
 }
 
 export function readEditor(editor: SupportedEditor): string {
-  if (isTextArea(editor)) return editor.value;
+  if (isTextControl(editor)) return editor.value;
   return editor.innerText.replace(/\r\n/g, "\n");
 }
 
 function dispatchInput(editor: SupportedEditor, text: string): void {
-  editor.dispatchEvent(new InputEvent("beforeinput", { bubbles: true, composed: true, inputType: "insertText", data: text }));
   editor.dispatchEvent(new InputEvent("input", { bubbles: true, composed: true, inputType: "insertText", data: text }));
   editor.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
 }
@@ -51,9 +58,10 @@ function replaceRichText(editor: HTMLElement, text: string): void {
 
 export function writeEditor(editor: SupportedEditor, text: string): void {
   editor.focus();
-  if (isTextArea(editor)) {
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
-    if (!setter) throw new Error("Textarea value setter is unavailable");
+  if (isTextControl(editor)) {
+    const prototype = isTextArea(editor) ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+    if (!setter) throw new Error("Text control value setter is unavailable");
     setter.call(editor, text);
     dispatchInput(editor, text);
     editor.setSelectionRange(text.length, text.length);
@@ -66,14 +74,18 @@ export function writeEditor(editor: SupportedEditor, text: string): void {
   selection?.removeAllRanges();
   selection?.addRange(range);
   const inserted = document.execCommand?.("insertText", false, text) ?? false;
-  if (!inserted || readEditor(editor) !== text) replaceRichText(editor, text);
-  dispatchInput(editor, text);
+  if (!inserted || readEditor(editor) !== text) {
+    replaceRichText(editor, text);
+    dispatchInput(editor, text);
+  } else {
+    editor.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+  }
   focusEditorEnd(editor);
 }
 
 export function focusEditorEnd(editor: SupportedEditor): void {
   editor.focus();
-  if (isTextArea(editor)) {
+  if (isTextControl(editor)) {
     editor.setSelectionRange(editor.value.length, editor.value.length);
     return;
   }

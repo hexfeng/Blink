@@ -1,5 +1,5 @@
 import { browser } from "wxt/browser";
-import { INPUT_LIMIT } from "../lib/constants";
+import { INPUT_LIMIT, REQUEST_TIMEOUT_MS } from "../lib/constants";
 import type { ErrorCode, ModeSelection, OptimizeResponse, PublicSettingsChangedMessage, SiteDescriptor, SyncedSettings } from "../lib/types";
 import { DEFAULT_SETTINGS } from "../lib/storage";
 import { editorIsVisible, findEditor, findOverlayAnchor, focusEditorEnd, readEditor, writeEditor, type SupportedEditor } from "./editor";
@@ -142,8 +142,23 @@ export class BlinkController {
       ? { type: "builtin", id: modeId }
       : { type: "custom", id: modeId };
 
-    const response = await this.sendRuntimeMessage<OptimizeResponse>({ type: "OPTIMIZE", requestId, text: snapshot, mode });
-    if (!response) return;
+    let response: OptimizeResponse | undefined;
+    try {
+      response = await this.sendRuntimeMessageWithTimeout<OptimizeResponse>({ type: "OPTIMIZE", requestId, text: snapshot, mode });
+    } catch {
+      if (this.request?.id === requestId) {
+        this.request = null;
+        this.showError("PROVIDER_ERROR");
+      }
+      return;
+    }
+    if (!response) {
+      if (this.request?.id === requestId) {
+        this.request = null;
+        this.showError("TIMEOUT");
+      }
+      return;
+    }
     if (!this.request || this.request.id !== requestId || !this.editor) return;
     this.request = null;
     if (!response.ok) return this.showError(response.error.code);
@@ -279,6 +294,20 @@ export class BlinkController {
       if (!isExtensionContextInvalidated(error)) throw error;
       this.runtimeInvalidated = true;
       return undefined;
+    }
+  }
+
+  private async sendRuntimeMessageWithTimeout<T>(message: object): Promise<T | undefined> {
+    let timer: number | undefined;
+    try {
+      return await Promise.race([
+        this.sendRuntimeMessage<T>(message),
+        new Promise<undefined>((resolve) => {
+          timer = window.setTimeout(resolve, REQUEST_TIMEOUT_MS + 1_000);
+        })
+      ]);
+    } finally {
+      if (timer) window.clearTimeout(timer);
     }
   }
 

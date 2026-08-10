@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BlinkController } from "../src/content/controller";
 import type { SiteDescriptor, SyncedSettings } from "../src/lib/types";
 
@@ -34,6 +34,8 @@ describe("BlinkController lifecycle", () => {
     runtime.addListener.mockReset();
     runtime.removeListener.mockReset();
   });
+
+  afterEach(() => vi.useRealTimers());
 
   it("does not publish or attach listeners when teardown happens during startup", async () => {
     let resolveSettings: ((value: { ok: true; settings: SyncedSettings }) => void) | undefined;
@@ -86,5 +88,38 @@ describe("BlinkController lifecycle", () => {
 
     await expect(controller.start()).resolves.toBeUndefined();
     expect(runtime.removeListener).toHaveBeenCalledOnce();
+  });
+
+  it("leaves loading when an optimize message fails", async () => {
+    const editor = document.createElement("textarea");
+    editor.value = "Original draft";
+    const controller = new BlinkController(site, vi.fn());
+    (controller as unknown as { editor: HTMLTextAreaElement }).editor = editor;
+    const states: Array<{ phase: string; errorCode: string | undefined }> = [];
+    controller.subscribe((state) => states.push({ phase: state.phase, errorCode: state.errorCode }));
+    runtime.sendMessage.mockRejectedValueOnce(new Error("Message channel closed"));
+
+    await expect(controller.optimize()).resolves.toBeUndefined();
+
+    expect(states.at(-1)).toEqual({ phase: "error", errorCode: "PROVIDER_ERROR" });
+    expect(editor.value).toBe("Original draft");
+  });
+
+  it("leaves loading when an optimize message never settles", async () => {
+    vi.useFakeTimers();
+    const editor = document.createElement("textarea");
+    editor.value = "Original draft";
+    const controller = new BlinkController(site, vi.fn());
+    (controller as unknown as { editor: HTMLTextAreaElement }).editor = editor;
+    const states: Array<{ phase: string; errorCode: string | undefined }> = [];
+    controller.subscribe((state) => states.push({ phase: state.phase, errorCode: state.errorCode }));
+    runtime.sendMessage.mockReturnValueOnce(new Promise(() => undefined));
+
+    const optimizing = controller.optimize();
+    await vi.advanceTimersByTimeAsync(26_000);
+    await optimizing;
+
+    expect(states.at(-1)).toEqual({ phase: "error", errorCode: "TIMEOUT" });
+    expect(editor.value).toBe("Original draft");
   });
 });

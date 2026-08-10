@@ -6,7 +6,7 @@ let context: BrowserContext;
 let optionsPage: Page;
 
 test.beforeAll(async () => {
-  const extensionPath = path.resolve(".output/chrome-mv3");
+  const extensionPath = path.resolve(process.env.BLINK_EXTENSION_PATH ?? ".output/chrome-mv3");
   context = await chromium.launchPersistentContext("", {
     channel: "chromium",
     headless: true,
@@ -27,9 +27,9 @@ test("loads the built options page with the three required sections", async () =
   await expect(optionsPage.getByRole("heading", { name: "Optimization modes" })).toBeVisible();
   await expect(optionsPage.getByRole("heading", { name: "Supported sites" })).toBeVisible();
   await expect(optionsPage.getByRole("checkbox", { name: "ChatGPT: Site allowed" })).toBeEnabled();
-  await expect(optionsPage.getByRole("checkbox", { name: "Meta AI: Site allowed" })).toBeDisabled();
+  await expect(optionsPage.getByRole("checkbox", { name: "DeepSeek: Site allowed" })).toBeDisabled();
   await expect(optionsPage.getByText("Pending verification").first()).toBeVisible();
-  await expect(optionsPage.getByText("External blocker")).toBeVisible();
+  await expect(optionsPage.getByText("External blocker").first()).toBeVisible();
 });
 
 test("has no serious or critical axe violations on first use", async () => {

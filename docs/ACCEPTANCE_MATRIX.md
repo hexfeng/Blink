@@ -4,7 +4,7 @@
 - 更新日期：2026-08-09
 - 汇总与执行顺序：[P0 状态与下一步计划](./STATUS.md)
 
-当前自动化快照：48/48 单元与组件测试通过；Playwright E2E 5/6 通过。唯一失败为设置页小字号颜色对比度。实站完整验收为 0/16，Gemini 有局部定位证据，Meta AI 为 `externalBlocked`。
+当前自动化快照：59/59 单元与组件测试通过；Playwright E2E 6/6 通过。ChatGPT、Gemini、Claude 已由用户报告完成完整手工验收；另有 7 个产品完成真实 Provider 的核心优化/写回/Undo 回归。
 
 ## 自动化门槛
 
@@ -22,25 +22,33 @@
 
 每个域名执行 PRD 中的八项路径，并增加：空且失焦时隐藏、200% 缩放、中英文布局、键盘路径、权限即时移除。尚未实测但可由测试者授权的站点标记 `pendingVerification`；它允许开启权限，但不得显示为已验证。只有确有账号、地区或登录墙阻塞的站点标记 `externalBlocked` 并禁用开关。
 
-| Wave | 产品 | 域名 | 当前证据 |
-| --- | --- | --- | --- |
-| A | ChatGPT | chatgpt.com | 待本地登录态验证 |
-| A | Gemini | gemini.google.com | 已确认当前 `.ql-editor` 与完整 `input-area` 外框；待完整优化/撤销实站验收 |
-| A | Claude | claude.ai | 待本地登录态验证 |
-| A | Grok | grok.com | 待本地登录态验证 |
-| A | Qwen | chat.qwen.ai | 待本地登录态验证 |
-| A | DeepSeek | chat.deepseek.com | 待本地登录态验证 |
-| A | MiniMax | chat.minimax.io / agent.minimax.io | 待本地登录态验证 |
-| A | Kimi | kimi.com | 待本地登录态验证 |
-| A | GLM / Z.ai | chatglm.cn / z.ai | 待本地登录态验证 |
-| B | 豆包 | doubao.com | 待本地登录态验证 |
-| B | Copilot | copilot.microsoft.com | 待本地登录态验证 |
-| B | Perplexity | perplexity.ai | 待本地登录态验证 |
-| B | Vibe | chat.mistral.ai | 待本地登录态验证 |
-| B | 腾讯元宝 | yuanbao.tencent.com | 待本地登录态验证 |
-| B | 文心助手 | wenxin.baidu.com | 待本地登录态验证 |
-| B | Meta AI | meta.ai | `externalBlocked`：地区与账号可用性阻止当前实站验收 |
+| Wave | 产品 | 域名 | 状态 | 当前证据 |
+| --- | --- | --- | --- | --- |
+| A | ChatGPT | chatgpt.com | `verified` | 用户报告完成完整手工验收；浏览器证据包含真实优化、直接写回与精确 Undo |
+| A | Gemini | gemini.google.com | `verified` | 用户报告完成完整手工验收；Reload 后真实优化与 Undo 复验通过 |
+| A | Claude | claude.ai | `verified` | 用户报告完成完整手工验收；20px ProseMirror 与 `fieldset` 锚点实站通过 |
+| A | Grok | grok.com | `pendingVerification` | 真实 OpenAI-compatible 请求完成 207→313 字符写回，Undo 精确恢复；完整矩阵待补 |
+| A | Qwen | chat.qwen.ai | `pendingVerification` | 真实请求完成 207→340 字符写回，Undo 精确恢复；完整矩阵待补 |
+| A | DeepSeek | chat.deepseek.com | `externalBlocked` | 当前登录墙阻止聊天编辑器验收 |
+| A | MiniMax | chat.minimax.io / agent.minimax.io | `pendingVerification` | 真实请求完成 207→337 字符写回，Undo 精确恢复；完整矩阵待补 |
+| A | Kimi | kimi.com / www.kimi.com | `pendingVerification` | Composer 锚点与重复写入已修复；正常提示词写回、无重复和 Undo 通过；完整矩阵待补 |
+| A | GLM / Z.ai | chatglm.cn / z.ai / chat.z.ai | `pendingVerification` | 真实请求完成 207→354 字符写回，Undo 精确恢复；完整矩阵待补 |
+| B | 豆包 | doubao.com / www.doubao.com | `externalBlocked` | 当前地区或账号状态阻止实站验收 |
+| B | Copilot | copilot.microsoft.com | `pendingVerification` | 真实请求完成 207→331 字符写回，Undo 精确恢复；完整矩阵待补 |
+| B | Perplexity | perplexity.ai / www.perplexity.ai | `pendingVerification` | 富文本重复写入已修复；正常提示词写回与 Undo 通过，原始 207 字符草稿已精确恢复；完整矩阵待补 |
+| B | Vibe | chat.mistral.ai | `externalBlocked` | 验收前需要用户接受站点服务条款 |
+| B | 腾讯元宝 | yuanbao.tencent.com | `externalBlocked` | 当前登录状态下输入框不可用 |
+| B | 文心助手 | wenxin.baidu.com | `pendingVerification` | 已配置当前 textarea 选择器，尚未完成实站优化与 Undo |
+| B | Meta AI | meta.ai | `pendingVerification` | 已确认当前纯文本 input 适配，尚未完成完整实站验收 |
+
+Kimi 与 Perplexity 对普通提示词的写回已经通过。含长追踪参数的 URL 提示词仍可能因单次模型输出未通过严格 JSON/URL 保留校验而返回 `INVALID_RESPONSE`；浏览器追踪确认错误发生在写回之前，不能把它归因于站点编辑器。
 
 ## Provider 实测
 
 站点适配使用本地确定性 OpenAI-compatible 测试服务隔离验证；OpenAI-compatible、Anthropic、Gemini 各自再以用户提供的 BYOK 在参考站点做一次端到端验证。API Key 不进入本文件。
+
+| 协议 | 状态 | 当前证据 |
+| --- | --- | --- |
+| OpenAI-compatible | `verified` | 用户使用真实 OpenAI 模型完成设置、真实站点优化、写回和 Undo；本轮七站回归继续通过 |
+| Anthropic | `pendingVerification` | 当前没有可用 API Key，按用户决定延后 |
+| Gemini 原生协议 | `pendingVerification` | 当前没有可用 API Key，按用户决定延后 |

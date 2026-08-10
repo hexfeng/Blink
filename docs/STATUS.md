@@ -12,11 +12,11 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 | 进度线 | 当前结果 | 解释 |
 | --- | --- | --- |
 | P0 工程里程碑 | 8/9，89% | 按里程碑门槛计数，不代表工时权重；剩余门槛是发布验收闭环 |
-| 单元与组件自动化 | 48/48 通过 | 10 个测试文件 |
-| Playwright E2E | 5/6 通过 | 设置页颜色对比度仍有 1 项 serious axe 违规 |
-| 实站完整验收 | 0/16 产品 | Gemini 有局部 DOM/定位证据，但尚未完成八项路径 |
+| 单元与组件自动化 | 59/59 通过 | 11 个测试文件 |
+| Playwright E2E | 6/6 通过 | 设置页无 serious/critical axe 违规；200% 成功态保持在视口内 |
+| 实站完整验收 | 3/16 产品 | ChatGPT、Gemini、Claude 为用户报告的完整手工验收；另有 7 个产品完成核心优化/Undo 回归 |
 | Provider 协议实现 | 3/3 | OpenAI-compatible、Anthropic、Gemini 均有代码级映射与测试 |
-| Provider 扩展全链路验收 | 待完成 | 需要 BYOK 设置、真实 Provider 请求、实站写回和撤销的连续证据 |
+| Provider 扩展全链路验收 | 1/3 | OpenAI-compatible 已通过；Anthropic、Gemini 原生协议因暂缺 API Key 延后 |
 
 状态词定义：
 
@@ -36,8 +36,8 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 | 5 | 安全替换、恢复与单步撤销 | completed | 快照比较、写回读回、恢复、撤销失效条件已覆盖 |
 | 6 | 设置页与站点应用商店卡片 | completed | 16 个站点、Logo、搜索、All/Enabled 筛选和权限开关已完成视觉验收 |
 | 7 | Luna 延迟优化与 A/B 系统 | completed | 96 次真实请求；Auto/Concise 使用 `none + low`，Professional 保持 `low` |
-| 8 | 构建、单元测试与视觉回归 | completed | TypeScript、ESLint、48 项测试、MV3 构建、设置页和悬浮窗视觉 QA 已通过 |
-| 9 | 发布验收闭环 | in progress | E2E 5/6；真实站点与三类 Provider 全链路证据未完成 |
+| 8 | 构建、单元测试与视觉回归 | completed | TypeScript、ESLint、59 项测试、E2E 6/6、MV3 构建、设置页和悬浮窗视觉 QA 已通过 |
+| 9 | 发布验收闭环 | in progress | 三个参考站点完整验收、七站核心回归和 OpenAI-compatible 全链路已完成；其余站点矩阵、两类 Provider 与发布包仍未闭环 |
 
 ## 3. 当前已验证内容
 
@@ -45,53 +45,54 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 - Provider API Key 只保存在受限的 `chrome.storage.local`，不进入 Content Script、日志或报告。
 - 模型组合框支持推荐模型、Provider 在线模型和自定义模型 ID；自定义 OpenAI-compatible URL 不冒充官方 OpenAI 模型目录。
 - Auto、Concise 和 Custom 对官方 `gpt-5.6-luna` 使用 `reasoning_effort: none` 与 `verbosity: low`；Professional 使用 `low` 和默认 verbosity。
-- 16 个站点以卡片目录展示；15 个为 `pendingVerification`，Meta AI 为 `externalBlocked`。
-- 悬浮窗默认、菜单、加载、相同结果、成功、错误和恢复状态已实现；模式区色块和扩展 Reload 生命周期错误已修复。
+- ChatGPT、Gemini、Claude 已由用户确认完成完整手工验收。
+- Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity 已用真实 OpenAI-compatible Provider 验证优化、写回和单步 Undo；它们在补齐全部矩阵前仍按 `pendingVerification` 管理。
+- Kimi 的 Composer 锚点与富文本重复写入已修复；Perplexity 富文本写回、Undo 和原文恢复已通过浏览器回归。
+- DeepSeek、豆包、Vibe、腾讯元宝分别受登录、地区、条款确认或账号状态阻塞；文心助手与 Meta AI 仍待完整实测。
+- 悬浮窗默认、菜单、加载、相同结果、成功、错误和恢复状态已实现；模式区色块、扩展 Reload 生命周期错误和富文本重复写入已修复。
 - 当前构建可从 `.output/chrome-mv3` 以开发者模式加载。
 
 ## 4. 未完成与阻塞
 
-### P0-A 设置页无障碍
+### P0-A 设置页无障碍：已关闭
 
-`npm run test:e2e` 当前 5/6 通过。唯一失败为小字号文字的 WCAG 2 AA 颜色对比度，包括：
-
-- `#777777` / 白色：4.47:1。
-- `#7b7b78` / 白色：4.24:1。
-- `#858581` / 白色：3.70:1。
-- `#168557` / `#f0f8f4`：4.29:1。
-- 站点域名 `#777773` / 白色：4.49:1。
-
-退出条件：不改变当前视觉层级，只调整相关文字 token，使 E2E 6/6 且无 serious/critical axe 违规。
+相关文字 token 已调整；`npm run test:e2e` 为 6/6，设置页无 serious/critical axe 违规。
 
 ### P0-B 实站验收
 
-- 完整 `verified`：0/16。
-- 局部证据：Gemini 已确认编辑器和 Composer 外框选择器。
-- `pendingVerification`：ChatGPT、Gemini、Claude 等 15 个产品状态中的 14 个没有额外实站证据，Gemini仍需完整路径。
-- `externalBlocked`：Meta AI，受地区与账号可用性影响。
+- 完整手工验收：3/16，分别为 ChatGPT、Gemini、Claude；由用户于 2026-08-09 报告通过完整路径。
+- 核心链路通过但仍为 `pendingVerification`：Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity。浏览器回归已证明注入、定位、优化写回、无重复和 Undo，但尚未逐站补齐全部八项路径、200% 缩放、键盘与权限移除。
+- 尚待实测：文心助手、Meta AI。
+- `externalBlocked`：DeepSeek（登录）、豆包（地区/账号）、Vibe（条款确认）、腾讯元宝（登录）。
+
+已知边界：含长追踪参数的 URL 提示词可能因单次模型输出未通过严格 JSON/URL 保留校验而显示 `Invalid model response`。50ms 编辑器追踪确认该错误发生在写回前，原文不应被修改；正常提示词在 Kimi 和 Perplexity 均已完成写回与 Undo。
 
 退出条件：逐站完成 [验收矩阵](./ACCEPTANCE_MATRIX.md) 的八项路径、缩放/键盘/权限移除补充项，并在源码中只把有完整证据的站点改为 `verified`。
 
 ### P0-C Provider 全链路
 
-Luna A/B 已证明官方 OpenAI 请求和参数策略，但不能替代扩展内的 Provider 全链路验收。OpenAI-compatible、Anthropic 和 Gemini 仍需分别完成：保存 BYOK → 测试连接 → 实站优化 → 写回 → 撤销。API Key 和模型输出不得写入文档。
+- OpenAI-compatible：`verified`。用户使用真实 OpenAI 模型完成设置、实站优化、写回和撤销；本轮七站回归继续使用同一 Provider。
+- Anthropic：`pendingVerification`，当前缺少 API Key。
+- Gemini 原生协议：`pendingVerification`，当前缺少 API Key。
+
+缺少凭据不记为失败，也不允许把未执行的协议写成已验证。API Key 和模型输出不得写入文档。
 
 ## 5. 下一步计划
 
 按以下顺序推进，不在发布门槛前扩展 P1 功能：
 
-1. **修复设置页颜色对比度**  
-   验证：`npm run test:e2e` 从 5/6 提升到 6/6。
-2. **完成三个参考站点验收：ChatGPT → Gemini → Claude**  
-   验证：每站八项路径、200% 缩放、键盘、权限即时移除；Reload 后先刷新页面并清理旧 Errors 记录。
-3. **完成三类 Provider 的扩展全链路验收**  
-   验证：OpenAI-compatible、Anthropic、Gemini 各有一条不含凭据的通过记录。
-4. **完成 Wave A 其余站点**  
-   验证：Grok、Qwen、DeepSeek、MiniMax、Kimi、GLM / Z.ai 逐项更新为 `verified` 或记录真实阻塞。
-5. **执行 Wave B 和 Meta AI 阻塞复核**  
-   验证：豆包、Copilot、Perplexity、Vibe、腾讯元宝、文心助手完成验收；Meta AI 保持或解除 `externalBlocked`，不得猜测。
-6. **本地内测发布包**  
-   验证：干净 Chrome Profile 安装、首次设置、升级、重置、卸载清理、ZIP 构建和已知问题说明全部通过。
+1. **补齐七个核心链路已通过站点的完整矩阵**
+   对 Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity 只补测尚缺的模式、长草稿、200% 缩放、键盘、撤销失效、错误恢复和权限即时移除，不重复已经通过的基础优化/Undo。
+2. **完成文心助手与 Meta AI 实站验收**
+   验证：当前编辑器选择器、定位、优化写回和 Undo；遇到真实账号或地区阻塞时才改为 `externalBlocked`。
+3. **复核四个外部阻塞站点**
+   DeepSeek、豆包、Vibe、腾讯元宝仅在账号、地区或条款条件具备时继续；否则保留具体阻塞，不猜测支持状态。
+4. **执行本地内测发布包验收**
+   验证：干净 Chrome Profile 安装、首次设置、站点按需授权、升级、重置、卸载清理、ZIP 构建和已知问题说明全部通过。
+5. **凭据具备后补齐 Provider**
+   Anthropic 与 Gemini 原生协议分别完成测试连接、实站优化、写回和撤销；在此之前保持 `pendingVerification`。
+6. **最终状态同步与发布门槛审查**
+   统一源码站点状态、README、验收矩阵和已知问题，执行全量自动化、密钥扫描与对抗式审查后再决定是否进入本地 Beta。
 
 ## 6. P0 后暂缓
 
