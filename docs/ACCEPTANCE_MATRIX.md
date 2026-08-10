@@ -1,5 +1,11 @@
 # Blink P0 验收矩阵
 
+- 状态：本地内测验收中
+- 更新日期：2026-08-09
+- 汇总与执行顺序：[P0 状态与下一步计划](./STATUS.md)
+
+当前自动化快照：48/48 单元与组件测试通过；Playwright E2E 5/6 通过。唯一失败为设置页小字号颜色对比度。实站完整验收为 0/16，Gemini 有局部定位证据，Meta AI 为 `externalBlocked`。
+
 ## 自动化门槛
 
 | 范围 | 必须通过 |
@@ -33,7 +39,7 @@
 | B | Vibe | chat.mistral.ai | 待本地登录态验证 |
 | B | 腾讯元宝 | yuanbao.tencent.com | 待本地登录态验证 |
 | B | 文心助手 | wenxin.baidu.com | 待本地登录态验证 |
-| B | Meta AI | meta.ai | 地区与账号可用性待验证 |
+| B | Meta AI | meta.ai | `externalBlocked`：地区与账号可用性阻止当前实站验收 |
 
 ## Provider 实测
 

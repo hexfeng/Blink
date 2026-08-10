@@ -3,10 +3,11 @@
 - 状态：已选定并通过浏览器视觉验证
 - 选定方向：Editorial Companion（视觉方案 3）
 - 参考图：[blink-editorial-companion-success-pill.png](./assets/blink-editorial-companion-success-pill.png)
+- 当前发布门槛：[P0 状态与下一步计划](./STATUS.md)
 
 ## 视觉语言
 
-- 暖白页面、深海军蓝正文、陶土橙主操作、鼠尾草绿成功态、柔和金色恢复态。
+- 设置页使用中性暖灰画布、白色卡片、细边框和语义绿色；注入 UI 使用黑色分段胶囊、绿色成功态、红色错误态和柔和金色恢复态。
 - 注入 UI 使用固定 px 尺寸和 Shadow DOM，不继承宿主字体、变量或根字号。
 - 胶囊固定在整个 Composer 外框右上方 8px，右边缘与包含发送按钮的完整外框对齐并限制在视口内；Composer 高度变化时保持该相对位置，编辑区内部文字滚动时不漂移。
 - 只在输入框聚焦或已有草稿时显示；不得遮挡发送、附件、语音等原站控件。
@@ -36,3 +37,5 @@
 - 模式菜单使用 `menuitemradio`，支持方向键、Enter、Escape。
 - 普通反馈使用 `aria-live=polite`，恢复失败使用 `role=alert`。
 - 所有交互具备清晰 `:focus-visible` 样式；减少动态效果时禁用非必要动画。
+
+视觉一致性已通过 `design-qa.md`；这不替代 WCAG 发布门槛。设置页仍有小字号颜色对比度问题，修复与退出条件记录在 [STATUS.md](./STATUS.md)。
