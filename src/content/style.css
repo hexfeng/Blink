@@ -69,6 +69,7 @@ button { font: inherit; }
 .blink-primary--static { cursor: default; }
 
 .blink-mode-trigger {
+  flex: 1 1 auto;
   gap: 7px;
   max-width: 148px;
   padding: 0 11px;

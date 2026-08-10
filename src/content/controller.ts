@@ -18,6 +18,10 @@ export interface OverlayState {
 
 type Listener = (state: OverlayState) => void;
 
+export function isExtensionContextInvalidated(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("Extension context invalidated");
+}
+
 export class BlinkController {
   private editor: SupportedEditor | null = null;
   private observer: MutationObserver | null = null;
@@ -28,6 +32,7 @@ export class BlinkController {
   private overlayActive = false;
   private overlayDeactivateTimer: number | undefined;
   private stopped = false;
+  private runtimeInvalidated = false;
   private listener: Listener = () => undefined;
   private toastTimer: number | undefined;
   private currentSession = "";
@@ -47,7 +52,7 @@ export class BlinkController {
     this.stopped = false;
     this.currentSession = this.sessionKey();
     await this.refreshSettings();
-    if (this.stopped) return;
+    if (this.stopped || this.runtimeInvalidated) return;
     this.observer = new MutationObserver(() => {
       this.checkSession();
       this.locate();
@@ -61,7 +66,14 @@ export class BlinkController {
     window.visualViewport?.addEventListener("resize", this.handleViewport, { passive: true });
     this.navigationTarget = (window as Window & { navigation?: EventTarget }).navigation ?? null;
     this.navigationTarget?.addEventListener("currententrychange", this.handleSessionChange);
-    browser.runtime.onMessage.addListener(this.handleRuntimeMessage);
+    try {
+      browser.runtime.onMessage.addListener(this.handleRuntimeMessage);
+    } catch (error) {
+      if (!isExtensionContextInvalidated(error)) throw error;
+      this.runtimeInvalidated = true;
+      this.teardown();
+      return;
+    }
     this.locate();
   }
 
@@ -80,13 +92,17 @@ export class BlinkController {
     window.visualViewport?.removeEventListener("resize", this.handleViewport);
     this.navigationTarget?.removeEventListener("currententrychange", this.handleSessionChange);
     this.navigationTarget = null;
-    browser.runtime.onMessage.removeListener(this.handleRuntimeMessage);
+    try {
+      browser.runtime.onMessage.removeListener(this.handleRuntimeMessage);
+    } catch (error) {
+      if (!isExtensionContextInvalidated(error)) throw error;
+    }
     this.update({ visible: false, menuOpen: false });
   }
 
   async refreshSettings(): Promise<void> {
-    const response = await browser.runtime.sendMessage({ type: "GET_PUBLIC_SETTINGS" }) as { ok: true; settings: SyncedSettings } | { ok: false };
-    if (!this.stopped && response.ok) this.update({ settings: response.settings });
+    const response = await this.sendRuntimeMessage<{ ok: true; settings: SyncedSettings } | { ok: false }>({ type: "GET_PUBLIC_SETTINGS" });
+    if (!this.stopped && response?.ok) this.update({ settings: response.settings });
   }
 
   setMenuOpen(menuOpen: boolean): void {
@@ -108,8 +124,8 @@ export class BlinkController {
   }
 
   async selectMode(modeId: string): Promise<void> {
-    const response = await browser.runtime.sendMessage({ type: "SET_ACTIVE_MODE", modeId }) as { ok: boolean; settings?: SyncedSettings };
-    if (response.ok && response.settings) this.update({ settings: response.settings, menuOpen: false });
+    const response = await this.sendRuntimeMessage<{ ok: boolean; settings?: SyncedSettings }>({ type: "SET_ACTIVE_MODE", modeId });
+    if (response?.ok && response.settings) this.update({ settings: response.settings, menuOpen: false });
   }
 
   async optimize(): Promise<void> {
@@ -126,7 +142,8 @@ export class BlinkController {
       ? { type: "builtin", id: modeId }
       : { type: "custom", id: modeId };
 
-    const response = await browser.runtime.sendMessage({ type: "OPTIMIZE", requestId, text: snapshot, mode }) as OptimizeResponse;
+    const response = await this.sendRuntimeMessage<OptimizeResponse>({ type: "OPTIMIZE", requestId, text: snapshot, mode });
+    if (!response) return;
     if (!this.request || this.request.id !== requestId || !this.editor) return;
     this.request = null;
     if (!response.ok) return this.showError(response.error.code);
@@ -177,7 +194,9 @@ export class BlinkController {
   }
 
   openSettings(): void {
-    void browser.runtime.openOptionsPage();
+    void browser.runtime.openOptionsPage().catch((error: unknown) => {
+      if (!isExtensionContextInvalidated(error)) console.error("[Blink] Could not open settings", error);
+    });
   }
 
   private locate(): void {
@@ -250,7 +269,17 @@ export class BlinkController {
     if (!this.request) return;
     const requestId = this.request.id;
     this.request = null;
-    await browser.runtime.sendMessage({ type: "CANCEL_OPTIMIZE", requestId });
+    await this.sendRuntimeMessage({ type: "CANCEL_OPTIMIZE", requestId });
+  }
+
+  private async sendRuntimeMessage<T>(message: object): Promise<T | undefined> {
+    try {
+      return await browser.runtime.sendMessage(message) as T;
+    } catch (error) {
+      if (!isExtensionContextInvalidated(error)) throw error;
+      this.runtimeInvalidated = true;
+      return undefined;
+    }
   }
 
   private clearUndo(): void {

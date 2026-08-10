@@ -58,4 +58,54 @@
 
 - P3: A future settings-wide redesign could replace the readiness rail with the reference navigation rail, but that would change established information architecture and is intentionally excluded here.
 
+Options final result: passed
+
+---
+
+# Blink overlay mode-segment QA
+
+## Comparison target
+
+- Source visual truth: `C:\Users\PC\AppData\Local\Temp\codex-clipboard-6df6f6c1-2c95-4a73-b598-ac711849bae1.png`
+- Pre-fix implementation: `C:\Users\PC\AppData\Local\Temp\blink-overlay-color-before.png`
+- Final implementation: `C:\Users\PC\AppData\Local\Temp\blink-overlay-ready-after.png`
+- Menu-open evidence: `C:\Users\PC\AppData\Local\Temp\blink-overlay-menu-after.png`
+- Route: `http://127.0.0.1:4173/?state=ready&locale=en`
+- State: dark host preview, ready overlay, menu closed for the main comparison.
+
+## Viewport and normalization
+
+- Reference pixels: 760 x 250.
+- Implementation browser viewport and capture: 760 x 500 CSS pixels at device scale 1.
+- The surrounding host editor differs from the supplied ChatGPT crop, so comparison is scoped to the 36 px Blink pill and its mode segment rather than the full host canvas.
+
+## Full-view and focused comparison evidence
+
+- Before the fix, the 184 px pill contained a 73.5 px mode trigger followed by about 32 px of exposed parent background, producing the reported third color layer to the right of the caret.
+- After the fix, the mode trigger grows to 105.5 px and reaches the pill's right border. The measured residual is 0.8 px, which is the outer border rather than an exposed background region.
+- The Blink/mode divider, 8 px radius, typography, Phosphor icons, and existing hover/focus language remain unchanged.
+
+## Required fidelity surfaces
+
+- Fonts and typography: passed; size, weight, alignment, and truncation are unchanged.
+- Spacing and layout rhythm: passed; the mode segment fills the remaining pill width without changing the 184 x 36 px frame.
+- Colors and visual tokens: passed; the intended two-segment palette remains, while the unintended third background layer is removed.
+- Image quality and asset fidelity: passed; existing vector icons are unchanged and remain sharp.
+- Copy and content: passed; active-mode text and menu labels are unchanged.
+
+## Interaction and browser checks
+
+- Page identity, non-blank content, and framework overlay: passed.
+- Console warnings/errors: none.
+- Default-state right-edge gap: 0.8 px outer border, passed.
+- 200% ready-state check: 368 x 72 px pill remains inside the 760 x 500 viewport; the 1.6 px residual is the scaled outer border.
+- Hover state: passed; the hover fill covers the full mode segment.
+- Menu interaction: passed; trigger reports `aria-expanded=true` and all three menu items render.
+
+## Comparison history
+
+1. Pass 1 reproduced the P2 color-layer defect and measured the mode segment ending before the pill border.
+2. Added `flex: 1 1 auto` to the mode trigger and a regression assertion for right-edge coverage.
+3. Pass 2 confirmed full-width default and hover states, working menu interaction, and no console errors. No P0, P1, or P2 findings remain.
+
 final result: passed

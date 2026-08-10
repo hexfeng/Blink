@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { browser } from "wxt/browser";
 import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
 import { BlinkOverlay } from "../../src/content/BlinkOverlay";
-import { BlinkController, type OverlayState } from "../../src/content/controller";
+import { BlinkController, isExtensionContextInvalidated, type OverlayState } from "../../src/content/controller";
 import { applyOverlayHostPosition, calculateOverlayPosition, hideOverlayHost } from "../../src/content/positioning";
 import { findSiteByUrl, SITE_PATTERNS } from "../../src/lib/sites";
 import type { TeardownSiteRequest } from "../../src/lib/types";
@@ -53,7 +53,9 @@ export default defineContentScript({
           state = next;
           root.render(<BlinkOverlay controller={mountedController} state={state} />);
         });
-        void mountedController.start();
+        void mountedController.start().catch((error: unknown) => {
+          if (!isExtensionContextInvalidated(error)) console.error("[Blink] Content script failed to start", error);
+        });
         return { root, controller: mountedController, unsubscribe };
       },
       onRemove(mounted) {
@@ -70,9 +72,20 @@ export default defineContentScript({
       ui.remove();
       window.__BLINK_MOUNTED__ = false;
     };
-    browser.runtime.onMessage.addListener(teardown);
+    try {
+      browser.runtime.onMessage.addListener(teardown);
+    } catch (error) {
+      if (!isExtensionContextInvalidated(error)) throw error;
+      ui.remove();
+      window.__BLINK_MOUNTED__ = false;
+      return;
+    }
     ctx.onInvalidated(() => {
-      browser.runtime.onMessage.removeListener(teardown);
+      try {
+        browser.runtime.onMessage.removeListener(teardown);
+      } catch (error) {
+        if (!isExtensionContextInvalidated(error)) throw error;
+      }
       window.__BLINK_MOUNTED__ = false;
     });
   }

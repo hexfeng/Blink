@@ -19,6 +19,15 @@ test("200 percent success pill stays inside the viewport", async ({ page }) => {
   expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(500);
 });
 
+test("mode trigger fills the right side of the ready pill", async ({ page }) => {
+  await page.goto("http://127.0.0.1:4173/?state=ready&locale=en");
+  const pill = await page.locator(".blink-pill").boundingBox();
+  const mode = await page.locator(".blink-mode-trigger").boundingBox();
+  expect(pill).not.toBeNull();
+  expect(mode).not.toBeNull();
+  expect(Math.abs((pill?.x ?? 0) + (pill?.width ?? 0) - ((mode?.x ?? 0) + (mode?.width ?? 0)))).toBeLessThanOrEqual(1);
+});
+
 test("shared editor driver handles textarea, rich text, and remount", async ({ page }) => {
   await page.goto("http://127.0.0.1:4173/fixture.html");
   await page.getByRole("button", { name: "Write textarea" }).click();
