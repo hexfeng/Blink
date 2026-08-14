@@ -1,10 +1,10 @@
 # Blink P0 验收矩阵
 
 - 状态：本地内测验收中
-- 更新日期：2026-08-09
+- 更新日期：2026-08-14
 - 汇总与执行顺序：[P0 状态与下一步计划](./STATUS.md)
 
-当前自动化快照：59/59 单元与组件测试通过；Playwright E2E 6/6 通过。ChatGPT、Gemini、Claude 已由用户报告完成完整手工验收；另有 7 个产品完成真实 Provider 的核心优化/写回/Undo 回归。
+当前自动化快照：71/71 单元与组件测试通过；Playwright E2E 6/6 通过。ChatGPT、Gemini、Claude 已由用户报告完成完整手工验收；另有 7 个产品完成真实 Provider 的核心优化/写回/Undo 回归。Blink 0.1.0 本地 Beta 生命周期验收已通过。
 
 ## 自动化门槛
 
@@ -52,3 +52,15 @@ Kimi 与 Perplexity 对普通提示词的写回已经通过。含长追踪参数
 | OpenAI-compatible | `verified` | 用户使用真实 OpenAI 模型完成设置、真实站点优化、写回和 Undo；本轮七站回归继续通过 |
 | Anthropic | `pendingVerification` | 当前没有可用 API Key，按用户决定延后 |
 | Gemini 原生协议 | `pendingVerification` | 当前没有可用 API Key，按用户决定延后 |
+
+## 本地 Beta 发布包
+
+| 范围 | 状态 | 当前证据 |
+| --- | --- | --- |
+| ZIP 产物 | `verified` | 0.1.0、341369 bytes、Manifest 位于根目录、SHA-256 已记录 |
+| 首次安装 | `verified` | 独立 Chrome Profile 默认状态、首次设置、OpenAI-compatible、ChatGPT 按需权限、优化与 Undo 通过 |
+| 本地升级模拟 | `verified` | 固定目录 0.0.9→0.1.0，Provider、模式和权限保留，无重复注入；不代表 Web Store 自动升级 |
+| Reset | `verified` | Provider、API Key、模式、权限和页面注入全部清除，重新配置后功能正常 |
+| 卸载与重装 | `verified` | 卸载后页面无 Blink；同路径重装 0.1.0 恢复完整默认状态 |
+
+环境、扩展 ID、哈希和人工/自动证据边界见 [本地 Beta 生命周期验收](./BETA_ACCEPTANCE.md)。

@@ -1,9 +1,9 @@
 # Blink P0 状态与下一步计划
 
 - 阶段：P0 功能完成，本地内测验收中
-- 更新日期：2026-08-09
+- 更新日期：2026-08-14
 - 发布状态：未达到发布门槛
-- 相关文档：[PRD](./PRD.md) · [验收矩阵](./ACCEPTANCE_MATRIX.md) · [性能结果](./PERFORMANCE_TEST_RESULTS.md) · [交互协议](./INTERACTIONS.md) · [视觉 QA](../design-qa.md)
+- 相关文档：[PRD](./PRD.md) · [验收矩阵](./ACCEPTANCE_MATRIX.md) · [本地 Beta 验收](./BETA_ACCEPTANCE.md) · [性能结果](./PERFORMANCE_TEST_RESULTS.md) · [交互协议](./INTERACTIONS.md) · [视觉 QA](../design-qa.md)
 
 ## 1. 完成度口径
 
@@ -12,7 +12,7 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 | 进度线 | 当前结果 | 解释 |
 | --- | --- | --- |
 | P0 工程里程碑 | 8/9，89% | 按里程碑门槛计数，不代表工时权重；剩余门槛是发布验收闭环 |
-| 单元与组件自动化 | 59/59 通过 | 11 个测试文件 |
+| 单元与组件自动化 | 71/71 通过 | 11 个测试文件 |
 | Playwright E2E | 6/6 通过 | 设置页无 serious/critical axe 违规；200% 成功态保持在视口内 |
 | 实站完整验收 | 3/16 产品 | ChatGPT、Gemini、Claude 为用户报告的完整手工验收；另有 7 个产品完成核心优化/Undo 回归 |
 | Provider 协议实现 | 3/3 | OpenAI-compatible、Anthropic、Gemini 均有代码级映射与测试 |
@@ -36,8 +36,8 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 | 5 | 安全替换、恢复与单步撤销 | completed | 快照比较、写回读回、恢复、撤销失效条件已覆盖 |
 | 6 | 设置页与站点应用商店卡片 | completed | 16 个站点、Logo、搜索、All/Enabled 筛选和权限开关已完成视觉验收 |
 | 7 | Luna 延迟优化与 A/B 系统 | completed | 96 次真实请求；Auto/Concise 使用 `none + low`，Professional 保持 `low` |
-| 8 | 构建、单元测试与视觉回归 | completed | TypeScript、ESLint、59 项测试、E2E 6/6、MV3 构建、设置页和悬浮窗视觉 QA 已通过 |
-| 9 | 发布验收闭环 | in progress | 三个参考站点完整验收、七站核心回归和 OpenAI-compatible 全链路已完成；其余站点矩阵、两类 Provider 与发布包仍未闭环 |
+| 8 | 构建、单元测试与视觉回归 | completed | TypeScript、ESLint、71 项测试、E2E 6/6、MV3 构建、设置页和悬浮窗视觉 QA 已通过 |
+| 9 | 发布验收闭环 | in progress | 三个参考站点完整验收、七站核心回归、OpenAI-compatible 全链路和本地 Beta 生命周期已完成；其余站点矩阵与两类 Provider 仍未闭环 |
 
 ## 3. 当前已验证内容
 
@@ -51,6 +51,7 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 - DeepSeek、豆包、Vibe、腾讯元宝分别受登录、地区、条款确认或账号状态阻塞；文心助手与 Meta AI 仍待完整实测。
 - 悬浮窗默认、菜单、加载、相同结果、成功、错误和恢复状态已实现；模式区色块、扩展 Reload 生命周期错误和富文本重复写入已修复。
 - 当前构建可从 `.output/chrome-mv3` 以开发者模式加载。
+- Blink 0.1.0 ZIP 已在独立 Chrome Profile 完成首次安装、0.0.9→0.1.0 本地升级模拟、Reset、卸载和同路径重装；完整证据见 [本地 Beta 生命周期验收](./BETA_ACCEPTANCE.md)。
 
 ## 4. 未完成与阻塞
 
@@ -77,6 +78,10 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 
 缺少凭据不记为失败，也不允许把未执行的协议写成已验证。API Key 和模型输出不得写入文档。
 
+### P0-D 本地 Beta 生命周期：已关闭
+
+Blink 0.1.0 在 Chrome 151 的独立 `--user-data-dir` Profile 中完成 ZIP 安装、默认状态、OpenAI-compatible 首次使用、按需站点权限、0.0.9→0.1.0 本地升级模拟、Reset、卸载和重装。升级基线仅修改构建产物的 Manifest 版本，因此该结果证明本地未打包扩展的数据与生命周期兼容性，不代表 Chrome Web Store 自动升级。
+
 ## 5. 下一步计划
 
 按以下顺序推进，不在发布门槛前扩展 P1 功能：
@@ -87,12 +92,10 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
    验证：当前编辑器选择器、定位、优化写回和 Undo；遇到真实账号或地区阻塞时才改为 `externalBlocked`。
 3. **复核四个外部阻塞站点**
    DeepSeek、豆包、Vibe、腾讯元宝仅在账号、地区或条款条件具备时继续；否则保留具体阻塞，不猜测支持状态。
-4. **执行本地内测发布包验收**
-   验证：干净 Chrome Profile 安装、首次设置、站点按需授权、升级、重置、卸载清理、ZIP 构建和已知问题说明全部通过。
-5. **凭据具备后补齐 Provider**
+4. **凭据具备后补齐 Provider**
    Anthropic 与 Gemini 原生协议分别完成测试连接、实站优化、写回和撤销；在此之前保持 `pendingVerification`。
-6. **最终状态同步与发布门槛审查**
-   统一源码站点状态、README、验收矩阵和已知问题，执行全量自动化、密钥扫描与对抗式审查后再决定是否进入本地 Beta。
+5. **最终状态同步与发布门槛审查**
+   统一源码站点状态、README、验收矩阵和已知问题，执行全量自动化、密钥扫描与对抗式审查后再决定是否扩大本地 Beta。
 
 ## 6. P0 后暂缓
 
