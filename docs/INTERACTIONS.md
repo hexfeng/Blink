@@ -156,7 +156,7 @@ flowchart TD
 
 模型输入框是可编辑组合框：默认展示当前 Provider 的推荐项，用户输入时过滤列表；自定义 OpenAI-compatible Base URL 不强行显示 OpenAI 模型，用户可直接输入模型 ID，或在授权 API Origin 后刷新 Provider 实际返回的模型列表。
 
-支持站点以卡片网格展示品牌图标、名称、域名、状态和开关；“全部 / 已启用”筛选与搜索只改变视图，不复制或改写 Chrome 权限状态。
+支持站点以卡片网格展示品牌图标、名称、域名、状态和开关；“Core / Experimental / Enabled”筛选与搜索只改变视图，不复制或改写 Chrome 权限状态。Core 固定为 ChatGPT、Claude、Gemini；Provider 选择与当前聊天网站相互独立。
 
 ## 7. 关键交互规则
 

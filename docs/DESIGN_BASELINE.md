@@ -38,4 +38,4 @@
 - 普通反馈使用 `aria-live=polite`，恢复失败使用 `role=alert`。
 - 所有交互具备清晰 `:focus-visible` 样式；减少动态效果时禁用非必要动画。
 
-视觉一致性已通过 `design-qa.md`；这不替代 WCAG 发布门槛。设置页仍有小字号颜色对比度问题，修复与退出条件记录在 [STATUS.md](./STATUS.md)。
+视觉一致性已通过 `design-qa.md`；这不替代 WCAG 发布门槛。当前设置页自动化无 serious/critical axe 违规，完整发布状态与退出条件记录在 [STATUS.md](./STATUS.md)。

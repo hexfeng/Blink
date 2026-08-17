@@ -69,6 +69,19 @@ describe("shared editor driver", () => {
     expect(editor.selectionStart).toBe(editor.value.length);
   });
 
+  it("finds ChatGPT's prompt textarea and anchors to the unified composer", () => {
+    const composer = document.createElement("form");
+    composer.dataset.type = "unified-composer";
+    const editor = document.createElement("textarea");
+    editor.id = "prompt-textarea";
+    editor.getBoundingClientRect = () => ({ width: 620, height: 52 } as DOMRect);
+    composer.append(editor);
+    document.body.append(composer);
+
+    expect(findEditor(site)).toBe(editor);
+    expect(findOverlayAnchor(editor, site)).toBe(composer);
+  });
+
   it("anchors the overlay to the whole composer instead of the inner editor", () => {
     const composer = document.createElement("form");
     composer.dataset.type = "unified-composer";

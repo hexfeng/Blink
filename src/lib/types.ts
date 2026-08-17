@@ -121,11 +121,13 @@ export type CommandResponse = { ok: true } | { ok: false; error: SafeError };
 export type ModelListResponse = { ok: true; models: ProviderModel[] } | { ok: false; error: SafeError };
 
 export type VerificationStatus = "pendingVerification" | "verified" | "externalBlocked";
+export type SiteSupportTier = "core" | "experimental";
 
 export interface SiteDescriptor {
   id: string;
   product: string;
   wave: "A" | "B";
+  supportTier?: SiteSupportTier;
   origins: string[];
   selectors: string[];
   minEditorHeight?: number;

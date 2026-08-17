@@ -95,6 +95,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .model-menu-footer button { display: inline-flex; min-height: 28px; align-items: center; gap: 5px; padding: 0 5px; border: 0; border-radius: 4px; background: transparent; color: #343431; font-size: 11px; font-weight: 650; }
 .model-menu-footer button:hover { background: #eeeeeb; }
 .model-menu-footer button:disabled { cursor: wait; opacity: .55; }
+.provider-scope-copy { margin: 1px 0 0 108px; color: #5f5f5b; font-size: 11px; line-height: 1.45; }
 .privacy-copy { display: flex; align-items: flex-start; gap: 7px; margin: 1px 0 0 108px; color: #737370; font-size: 11px; font-weight: 400; }
 .privacy-copy svg { flex: 0 0 auto; }
 .form-actions { display: flex; align-items: center; gap: 10px; margin: 4px 0 0 108px; }
@@ -186,7 +187,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   .readiness-item:not(:last-of-type)::after { height: 24px; }
   .provider-form { margin-left: 0; }
   .provider-form > label { grid-template-columns: 1fr; gap: 6px; }
-  .privacy-copy, .form-actions, .feedback, .mode-list, .site-grid, .section-action { margin-left: 0; }
+  .provider-scope-copy, .privacy-copy, .form-actions, .feedback, .mode-list, .site-grid, .section-action { margin-left: 0; }
   .site-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 

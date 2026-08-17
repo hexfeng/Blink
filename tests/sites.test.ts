@@ -20,4 +20,11 @@ describe("site catalog", () => {
     expect(SITES.filter((site) => site.verificationStatus === "verified").map((site) => site.id)).toEqual(["chatgpt", "gemini", "claude"]);
     expect(SITES.filter((site) => ["grok", "qwen", "minimax", "kimi", "glm", "copilot", "perplexity"].includes(site.id)).every((site) => site.verificationStatus === "pendingVerification")).toBe(true);
   });
+
+  it("keeps the 0.1.x Core Beta limited to the three verified reference sites", () => {
+    const coreSites = SITES.filter((site) => site.supportTier === "core");
+    expect(coreSites.map((site) => site.id)).toEqual(["chatgpt", "gemini", "claude"]);
+    expect(coreSites.every((site) => site.verificationStatus === "verified" && site.lastVerifiedVersion === "0.1.1")).toBe(true);
+    expect(SITES.filter((site) => site.supportTier !== "core")).toHaveLength(13);
+  });
 });

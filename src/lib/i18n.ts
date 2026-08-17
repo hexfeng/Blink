@@ -41,6 +41,8 @@ const messages = {
     modelService: "Model service",
     modelServiceHelp: "Configure the model Blink will use to rewrite prompts.",
     provider: "Provider",
+    preview: "Preview",
+    providerSiteIndependence: "The chat website and model provider are independent. OpenAI-compatible is verified for this Beta.",
     baseUrl: "Base URL",
     apiKey: "API Key",
     model: "Model",
@@ -70,8 +72,9 @@ const messages = {
     delete: "Delete",
     customModeLimit: "You can create up to 5 custom modes.",
     supportedSites: "Supported sites",
-    supportedSitesHelp: "Blink runs only on sites you explicitly allow.",
-    all: "All",
+    supportedSitesHelp: "Core Beta supports ChatGPT, Claude, and Gemini. Other adapters are experimental and opt-in.",
+    core: "Core",
+    experimental: "Experimental",
     enabled: "Enabled",
     enabledCount: "{count} enabled",
     siteFilter: "Filter supported sites",
@@ -93,7 +96,7 @@ const messages = {
     modeNameLength: "Use 1–20 characters",
     modeInstructionLength: "Use 1–800 characters",
     saveBeforeTest: "Save this configuration before testing",
-    noSiteVerified: "Enable a pending site to test Blink"
+    noSiteVerified: "Enable a Core site to complete Beta readiness"
   },
   "zh-CN": {
     auto: "自动",
@@ -135,6 +138,8 @@ const messages = {
     modelService: "模型服务",
     modelServiceHelp: "配置 Blink 用于改写提示词的模型服务。",
     provider: "Provider",
+    preview: "预览",
+    providerSiteIndependence: "聊天网站与模型 Provider 相互独立；当前 Beta 已验证 OpenAI-compatible。",
     baseUrl: "Base URL",
     apiKey: "API Key",
     model: "模型",
@@ -164,8 +169,9 @@ const messages = {
     delete: "删除",
     customModeLimit: "最多可创建 5 个自定义模式。",
     supportedSites: "支持站点",
-    supportedSitesHelp: "Blink 只在你明确授权的站点运行。",
-    all: "全部",
+    supportedSitesHelp: "Core Beta 正式支持 ChatGPT、Claude 和 Gemini；其他适配为可选实验功能。",
+    core: "Core",
+    experimental: "实验",
     enabled: "已启用",
     enabledCount: "已启用 {count} 个",
     siteFilter: "筛选支持站点",
@@ -187,7 +193,7 @@ const messages = {
     modeNameLength: "请输入 1–20 个字符",
     modeInstructionLength: "请输入 1–800 个字符",
     saveBeforeTest: "请先保存当前配置再测试",
-    noSiteVerified: "启用一个待验证站点以测试 Blink"
+    noSiteVerified: "启用一个 Core 站点以完成 Beta 就绪检查"
   }
 } as const;
 

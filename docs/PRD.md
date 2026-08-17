@@ -188,7 +188,7 @@ OpenAI-compatible 可接入 OpenAI、OpenRouter，以及提供兼容端点的 De
 ### 支持站点
 
 - 应用商店式站点卡片：品牌图标、名称、域名、状态和授权开关。
-- 支持按名称搜索，以及查看全部或仅已启用站点。
+- Core 默认展示 ChatGPT、Claude、Gemini；Experimental 展示其他可选适配器；Enabled 汇总所有已授权站点。搜索只过滤当前分组。
 - Chrome Host Permission 仍是站点启用状态的唯一事实来源。
 
 不提供外观主题、快捷键编辑、多 Provider 列表或用量统计。

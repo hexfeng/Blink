@@ -13,7 +13,7 @@ import { SITE_ICONS } from "./siteIcons";
 
 type ProviderDraft = Omit<ProviderConfig, "schemaVersion">;
 type ConnectionState = "idle" | "saved" | "testing" | "success" | "error";
-type SiteFilter = "all" | "enabled";
+type SiteFilter = "core" | "experimental" | "enabled";
 
 const defaultDraft: ProviderDraft = { kind: "openai-compatible", baseUrl: DEFAULT_OPENAI_BASE_URL, apiKey: "", model: "gpt-5.6-luna" };
 const demoProvider: ProviderConfig = { schemaVersion: 1, ...defaultDraft, apiKey: "sk-blink-demo" };
@@ -32,7 +32,7 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
   const [remoteModels, setRemoteModels] = useState<Record<string, ProviderModel[]>>({});
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsUpdatedAt, setModelsUpdatedAt] = useState<number | null>(null);
-  const [siteFilter, setSiteFilter] = useState<SiteFilter>("all");
+  const [siteFilter, setSiteFilter] = useState<SiteFilter>("core");
   const [siteSearch, setSiteSearch] = useState("");
   const [editingMode, setEditingMode] = useState<CustomMode | null>(null);
   const modelCombobox = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
   const serializedDraft = JSON.stringify(draft);
   const serializedProvider = provider ? JSON.stringify({ kind: provider.kind, baseUrl: provider.baseUrl, apiKey: provider.apiKey, model: provider.model }) : "";
   const dirty = serializedDraft !== serializedProvider;
-  const hasAllowedSite = SITES.some((site) => site.verificationStatus !== "externalBlocked" && permissionState[site.id]);
+  const hasAllowedSite = SITES.some((site) => site.supportTier === "core" && permissionState[site.id]);
   const ready = Boolean(provider && hasAllowedSite);
   const enabledSiteCount = SITES.filter((site) => permissionState[site.id]).length;
   const modelSourceKey = `${draft.kind}:${draft.baseUrl.trim()}`;
@@ -76,6 +76,8 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
     ? modelOptions
     : modelOptions.filter((model) => `${model.name} ${model.id}`.toLowerCase().includes(draft.model.trim().toLowerCase()));
   const visibleSites = SITES.filter((site) => {
+    if (siteFilter === "core" && site.supportTier !== "core") return false;
+    if (siteFilter === "experimental" && site.supportTier === "core") return false;
     if (siteFilter === "enabled" && !permissionState[site.id]) return false;
     if (!siteSearch.trim()) return true;
     const domains = site.origins.map(siteHostname).join(" ");
@@ -258,7 +260,7 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
           <section className="settings-section model-section" aria-labelledby="model-title">
             <SectionHeading id="model-title" number="1" title={t("modelService")} help={t("modelServiceHelp")} />
             <form className="provider-form" onSubmit={saveProvider}>
-              <label>{t("provider")}<select value={draft.kind} onChange={(event) => updateKind(event.target.value as ProviderKind)}><option value="openai-compatible">OpenAI-compatible</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select></label>
+              <label>{t("provider")}<select value={draft.kind} onChange={(event) => updateKind(event.target.value as ProviderKind)}><option value="openai-compatible">OpenAI-compatible</option><option value="anthropic">Anthropic · {t("preview")}</option><option value="gemini">Gemini · {t("preview")}</option></select></label>
               <label>{t("baseUrl")}<input type="url" value={draft.baseUrl} onChange={(event) => { setDraft({ ...draft, baseUrl: event.target.value }); setConnection("idle"); }} required /></label>
               <label>{t("apiKey")}<span className="secret-field"><input type={showKey ? "text" : "password"} value={draft.apiKey} onChange={(event) => { setDraft({ ...draft, apiKey: event.target.value }); setConnection("idle"); }} autoComplete="off" required /><button type="button" onClick={() => setShowKey(!showKey)} aria-label={showKey ? "Hide API key" : "Show API key"}>{showKey ? <EyeSlash size={18} /> : <Eye size={18} />}</button></span></label>
               <label>{t("model")}
@@ -318,6 +320,7 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
                   </div> : null}
                 </div>
               </label>
+              <p className="provider-scope-copy">{t("providerSiteIndependence")}</p>
               <p className="privacy-copy"><Lock size={16} aria-hidden="true" />{t("apiKeyDisclosure")}</p>
               <div className="form-actions"><button className="primary-button" type="submit">{t("save")}</button><button className="text-button" type="button" onClick={() => void runConnectionTest()} disabled={connection === "testing"}>{connection === "testing" ? t("testing") : t("testConnection")}</button></div>
               {feedback ? <p className={`feedback feedback--${connection}`} role="status">{connection === "success" ? <CheckCircle size={17} weight="fill" /> : connection === "error" ? <WarningCircle size={17} weight="fill" /> : null}{feedback}</p> : null}
@@ -338,7 +341,8 @@ export function OptionsApp({ demo = false }: { demo?: boolean }) {
               <div className="sites-title-group"><SectionHeading id="sites-title" number="3" title={t("supportedSites")} help={t("supportedSitesHelp")} /><span className="enabled-count">{t("enabledCount").replace("{count}", String(enabledSiteCount))}</span></div>
               <div className="site-toolbar">
                 <div className="site-filter" aria-label={t("siteFilter")}>
-                  <button className={siteFilter === "all" ? "active" : ""} type="button" onClick={() => setSiteFilter("all")}>{t("all")}</button>
+                  <button className={siteFilter === "core" ? "active" : ""} type="button" onClick={() => setSiteFilter("core")}>{t("core")}</button>
+                  <button className={siteFilter === "experimental" ? "active" : ""} type="button" onClick={() => setSiteFilter("experimental")}>{t("experimental")}</button>
                   <button className={siteFilter === "enabled" ? "active" : ""} type="button" onClick={() => setSiteFilter("enabled")}>{t("enabled")}</button>
                 </div>
                 <label className="site-search"><span className="sr-only">{t("searchSites")}</span><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={siteSearch} placeholder={t("searchSites")} onChange={(event) => setSiteSearch(event.target.value)} /></label>

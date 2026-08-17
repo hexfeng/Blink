@@ -27,8 +27,18 @@ test("loads the built options page with the three required sections", async () =
   await expect(optionsPage.getByRole("heading", { name: "Optimization modes" })).toBeVisible();
   await expect(optionsPage.getByRole("heading", { name: "Supported sites" })).toBeVisible();
   await expect(optionsPage.getByRole("checkbox", { name: "ChatGPT: Site allowed" })).toBeEnabled();
+  await expect(optionsPage.getByRole("checkbox", { name: "Gemini: Site allowed" })).toBeEnabled();
+  await expect(optionsPage.getByRole("checkbox", { name: "Claude: Site allowed" })).toBeEnabled();
+  await expect(optionsPage.getByText("Grok")).toHaveCount(0);
+  await expect(optionsPage.getByText("OpenAI-compatible is verified for this Beta.")).toBeVisible();
+
+  await optionsPage.setViewportSize({ width: 720, height: 800 });
+  const horizontalOverflow = await optionsPage.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(horizontalOverflow).toBeLessThanOrEqual(1);
+  await optionsPage.setViewportSize({ width: 1280, height: 720 });
+
+  await optionsPage.getByRole("button", { name: "Experimental" }).click();
   await expect(optionsPage.getByRole("checkbox", { name: "DeepSeek: Site allowed" })).toBeDisabled();
-  await expect(optionsPage.getByText("Pending verification").first()).toBeVisible();
   await expect(optionsPage.getByText("External blocker").first()).toBeVisible();
 });
 

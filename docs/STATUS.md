@@ -1,29 +1,38 @@
 # Blink P0 状态与下一步计划
 
-- 阶段：P0 功能完成，本地内测验收中
-- 更新日期：2026-08-14
-- 发布状态：未达到发布门槛
-- 相关文档：[PRD](./PRD.md) · [验收矩阵](./ACCEPTANCE_MATRIX.md) · [本地 Beta 验收](./BETA_ACCEPTANCE.md) · [性能结果](./PERFORMANCE_TEST_RESULTS.md) · [交互协议](./INTERACTIONS.md) · [视觉 QA](../design-qa.md)
+- 阶段：0.1.1 Core Beta 本地验收完成
+- 更新日期：2026-08-16
+- 当前发布范围：ChatGPT、Claude、Gemini + OpenAI-compatible Provider
+- 发布状态：通过；最终包、真实升级、三站实站冒烟与 Chrome Errors 检查均已完成
+- 相关文档：[PRD](./PRD.md) · [验收矩阵](./ACCEPTANCE_MATRIX.md) · [0.1.0 本地 Beta 验收](./BETA_ACCEPTANCE.md) · [性能结果](./PERFORMANCE_TEST_RESULTS.md) · [交互协议](./INTERACTIONS.md) · [视觉 QA](../design-qa.md)
 
 ## 1. 完成度口径
 
-Blink 同时使用两条进度线，避免把“代码已实现”误写成“产品已验收”。
+Blink 同时记录工程、自动化、实站、Provider 和发布包证据；代码存在不等于当前版本已完成实站验收。
 
 | 进度线 | 当前结果 | 解释 |
 | --- | --- | --- |
-| P0 工程里程碑 | 8/9，89% | 按里程碑门槛计数，不代表工时权重；剩余门槛是发布验收闭环 |
-| 单元与组件自动化 | 71/71 通过 | 11 个测试文件 |
-| Playwright E2E | 6/6 通过 | 设置页无 serious/critical axe 违规；200% 成功态保持在视口内 |
-| 实站完整验收 | 3/16 产品 | ChatGPT、Gemini、Claude 为用户报告的完整手工验收；另有 7 个产品完成核心优化/Undo 回归 |
-| Provider 协议实现 | 3/3 | OpenAI-compatible、Anthropic、Gemini 均有代码级映射与测试 |
-| Provider 扩展全链路验收 | 1/3 | OpenAI-compatible 已通过；Anthropic、Gemini 原生协议因暂缺 API Key 延后 |
+| P0 工程里程碑 | 9/9，100% | 0.1.1 Core Beta 本地发布验收闭环完成 |
+| 单元与组件自动化 | 73/73 通过 | 11 个测试文件；包含三个 Core 站点目录与编辑器契约 |
+| Playwright E2E | 6/6 通过 | Core 默认视图、Provider 提示、无障碍、200% 与编辑器回归通过 |
+| Core 站点完整验收 | 3/3（0.1.1） | ChatGPT、Claude、Gemini 完整手工验收及 0.1.1 优化/写回/Undo 冒烟通过 |
+| Experimental 站点 | 13 个适配器 | 保留现有实现与证据，暂不作为 0.1.1 Core Beta 阻塞项 |
+| Provider 代码实现 | 3/3 | OpenAI-compatible、Anthropic、Gemini 均有协议映射与自动化 |
+| 当前发布 Provider 实测 | 1/1 | OpenAI-compatible 已通过；Anthropic 与 Gemini 原生协议为 Preview |
+| 本地 Beta 生命周期 | 0.1.0 与真实升级均通过 | 0.1.0 全生命周期完成；0.1.0→0.1.1 配置、模式和权限保留通过 |
 
-状态词定义：
+发布分层：
 
-- `completed`：需求已实现，并有当前仓库的自动化或浏览器证据。
-- `pendingVerification`：已实现且允许测试者授权，但尚未完成登录态实站验收。
+- `Core`：本轮承诺完整支持并作为发布门槛的站点，仅 ChatGPT、Claude、Gemini。
+- `Experimental`：可由用户显式授权的其他适配器；保留真实状态，但本轮不要求补齐完整矩阵。
+- `Preview`：协议已实现且有自动化，但尚无真实凭据全链路证据；当前为 Anthropic 与 Gemini 原生 Provider。
+- 站点与 Provider 相互独立；例如 Claude 网站可以使用 OpenAI-compatible Provider。
+
+验证状态仍保持严格含义：
+
+- `pendingVerification`：已实现且允许授权，但尚未完成完整实站验收。
 - `verified`：已按验收矩阵完成真实站点或真实 Provider 全链路验证。
-- `externalBlocked`：账号、地区或登录墙阻止当前验收；不得显示为已支持。
+- `externalBlocked`：账号、地区或登录墙阻止当前验收；不得显示为已验证。
 
 ## 2. P0 里程碑
 
@@ -34,68 +43,58 @@ Blink 同时使用两条进度线，避免把“代码已实现”误写成“�
 | 3 | Auto、Concise、Professional 与自定义模式 | completed | Prompt 组装、模式切换、键盘菜单和最多 5 个自定义模式已覆盖 |
 | 4 | BYOK Provider 与模型选择器 | completed | 三种协议、推荐/在线/自定义模型、测试与保存分离已实现 |
 | 5 | 安全替换、恢复与单步撤销 | completed | 快照比较、写回读回、恢复、撤销失效条件已覆盖 |
-| 6 | 设置页与站点应用商店卡片 | completed | 16 个站点、Logo、搜索、All/Enabled 筛选和权限开关已完成视觉验收 |
+| 6 | 设置页与站点分层 | completed | Core / Experimental / Enabled、搜索、权限开关和 Provider 独立说明已实现 |
 | 7 | Luna 延迟优化与 A/B 系统 | completed | 96 次真实请求；Auto/Concise 使用 `none + low`，Professional 保持 `low` |
-| 8 | 构建、单元测试与视觉回归 | completed | TypeScript、ESLint、71 项测试、E2E 6/6、MV3 构建、设置页和悬浮窗视觉 QA 已通过 |
-| 9 | 发布验收闭环 | in progress | 三个参考站点完整验收、七站核心回归、OpenAI-compatible 全链路和本地 Beta 生命周期已完成；其余站点矩阵与两类 Provider 仍未闭环 |
+| 8 | 构建、测试与视觉回归 | completed | TypeScript、ESLint、73 项测试、E2E 6/6、MV3 构建与 ZIP 检查通过 |
+| 9 | 0.1.1 Core Beta 发布验收 | completed | 最终 ZIP、真实升级、三站复验、密钥扫描、Chrome Errors 与对抗式审查均通过 |
 
-## 3. 当前已验证内容
+## 3. 已验证内容
 
 - Blink 只读取当前未发送草稿，不读取历史、附件或网页正文，也不自动发送。
 - Provider API Key 只保存在受限的 `chrome.storage.local`，不进入 Content Script、日志或报告。
-- 模型组合框支持推荐模型、Provider 在线模型和自定义模型 ID；自定义 OpenAI-compatible URL 不冒充官方 OpenAI 模型目录。
-- Auto、Concise 和 Custom 对官方 `gpt-5.6-luna` 使用 `reasoning_effort: none` 与 `verbosity: low`；Professional 使用 `low` 和默认 verbosity。
-- ChatGPT、Gemini、Claude 已由用户确认完成完整手工验收。
-- Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity 已用真实 OpenAI-compatible Provider 验证优化、写回和单步 Undo；它们在补齐全部矩阵前仍按 `pendingVerification` 管理。
-- Kimi 的 Composer 锚点与富文本重复写入已修复；Perplexity 富文本写回、Undo 和原文恢复已通过浏览器回归。
-- DeepSeek、豆包、Vibe、腾讯元宝分别受登录、地区、条款确认或账号状态阻塞；文心助手与 Meta AI 仍待完整实测。
-- 悬浮窗默认、菜单、加载、相同结果、成功、错误和恢复状态已实现；模式区色块、扩展 Reload 生命周期错误和富文本重复写入已修复。
-- 当前构建可从 `.output/chrome-mv3` 以开发者模式加载。
-- Blink 0.1.0 ZIP 已在独立 Chrome Profile 完成首次安装、0.0.9→0.1.0 本地升级模拟、Reset、卸载和同路径重装；完整证据见 [本地 Beta 生命周期验收](./BETA_ACCEPTANCE.md)。
+- Auto、Concise、Professional、自定义模式、直接替换、单步 Undo、错误恢复和权限移除均有自动化或浏览器证据。
+- ChatGPT、Gemini、Claude 已完成完整手工验收；0.1.1 使用同一中文草稿分别完成优化、直接写回和精确 Undo。
+- OpenAI-compatible 已用真实 OpenAI 模型完成设置、实站优化、写回和 Undo；同一个 Provider 可用于任一聊天网站。
+- 0.1.1 设置页默认只展示三个 Core 站点；Experimental 需要用户显式切换和授权；Enabled 可用于管理所有已有权限。
+- 0.1.1 生产构建和 ZIP 已生成；Manifest 版本为 0.1.1、MV3、无静态 Host Permission、包含 25 个可选 Host Permission。
+- 0.1.0 的首次安装、升级模拟、Reset、卸载和重装结果保留为历史证据；真实 0.1.0→0.1.1 升级已确认 Provider、`Upgrade Marker`、Concise 活动模式和三个 Core 站点权限保留。
+- 最终构建 Reload 后再次完成三站优化与 Undo；`chrome://extensions` 未产生新的 Blink Errors。
 
-## 4. 未完成与阻塞
+## 4. 未完成与非阻塞项
 
-### P0-A 设置页无障碍：已关闭
+### P0-A 0.1.1 Core 三站冒烟：已关闭
 
-相关文字 token 已调整；`npm run test:e2e` 为 6/6，设置页无 serious/critical axe 违规。
+ChatGPT、Claude、Gemini 均只有一个 Blink；悬浮窗与 Composer 右边缘对齐、间距 12px；同一中文草稿完成真实 OpenAI-compatible 优化、直接写回和单步 Undo，原文均精确恢复。源码 `lastVerifiedVersion` 已更新为 0.1.1。
 
-### P0-B 实站验收
+### P0-B 真实历史版本升级：已关闭
 
-- 完整手工验收：3/16，分别为 ChatGPT、Gemini、Claude；由用户于 2026-08-09 报告通过完整路径。
-- 核心链路通过但仍为 `pendingVerification`：Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity。浏览器回归已证明注入、定位、优化写回、无重复和 Undo，但尚未逐站补齐全部八项路径、200% 缩放、键盘与权限移除。
-- 尚待实测：文心助手、Meta AI。
-- `externalBlocked`：DeepSeek（登录）、豆包（地区/账号）、Vibe（条款确认）、腾讯元宝（登录）。
+在此前通过生命周期验收的独立 Chrome Profile 中，先以真实 0.1.0 建立 Provider、`Upgrade Marker`、Concise 和三个 Core 权限，再原位升级到 0.1.1。版本、配置、模式、权限与设置页新分层均由用户确认保留；该证据不同于 0.0.9→0.1.0 的同代码版本模拟。
 
-已知边界：含长追踪参数的 URL 提示词可能因单次模型输出未通过严格 JSON/URL 保留校验而显示 `Invalid model response`。50ms 编辑器追踪确认该错误发生在写回前，原文不应被修改；正常提示词在 Kimi 和 Perplexity 均已完成写回与 Undo。
+### P0-C Provider Preview：非本轮阻塞
 
-退出条件：逐站完成 [验收矩阵](./ACCEPTANCE_MATRIX.md) 的八项路径、缩放/键盘/权限移除补充项，并在源码中只把有完整证据的站点改为 `verified`。
+- Anthropic：`Preview / pendingVerification`，当前缺少 API Key。
+- Gemini 原生协议：`Preview / pendingVerification`，当前缺少 API Key。
 
-### P0-C Provider 全链路
+缺少凭据不记为失败，也不影响以 OpenAI-compatible 为正式 Provider 的 0.1.1 Core Beta。凭据具备后再分别执行测试连接、真实优化、写回和 Undo。
 
-- OpenAI-compatible：`verified`。用户使用真实 OpenAI 模型完成设置、实站优化、写回和撤销；本轮七站回归继续使用同一 Provider。
-- Anthropic：`pendingVerification`，当前缺少 API Key。
-- Gemini 原生协议：`pendingVerification`，当前缺少 API Key。
+### P0-D Experimental 站点：非本轮阻塞
 
-缺少凭据不记为失败，也不允许把未执行的协议写成已验证。API Key 和模型输出不得写入文档。
+- 核心优化、写回与 Undo 已通过但仍为 `pendingVerification`：Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity。
+- 尚待完整实测：文心助手、Meta AI。
+- `externalBlocked`：DeepSeek、豆包、Vibe、腾讯元宝。
 
-### P0-D 本地 Beta 生命周期：已关闭
+这些状态和既有证据继续保留，但按用户决定暂不补齐其完整矩阵。含长追踪参数的 URL 仍可能因模型输出未通过严格 JSON/URL 保留校验而返回 `INVALID_RESPONSE`；错误发生在写回之前，原文不应被修改。
 
-Blink 0.1.0 在 Chrome 151 的独立 `--user-data-dir` Profile 中完成 ZIP 安装、默认状态、OpenAI-compatible 首次使用、按需站点权限、0.0.9→0.1.0 本地升级模拟、Reset、卸载和重装。升级基线仅修改构建产物的 Manifest 版本，因此该结果证明本地未打包扩展的数据与生命周期兼容性，不代表 Chrome Web Store 自动升级。
+## 5. 后续开发计划
 
-## 5. 下一步计划
-
-按以下顺序推进，不在发布门槛前扩展 P1 功能：
-
-1. **补齐七个核心链路已通过站点的完整矩阵**
-   对 Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity 只补测尚缺的模式、长草稿、200% 缩放、键盘、撤销失效、错误恢复和权限即时移除，不重复已经通过的基础优化/Undo。
-2. **完成文心助手与 Meta AI 实站验收**
-   验证：当前编辑器选择器、定位、优化写回和 Undo；遇到真实账号或地区阻塞时才改为 `externalBlocked`。
-3. **复核四个外部阻塞站点**
-   DeepSeek、豆包、Vibe、腾讯元宝仅在账号、地区或条款条件具备时继续；否则保留具体阻塞，不猜测支持状态。
-4. **凭据具备后补齐 Provider**
-   Anthropic 与 Gemini 原生协议分别完成测试连接、实站优化、写回和撤销；在此之前保持 `pendingVerification`。
-5. **最终状态同步与发布门槛审查**
-   统一源码站点状态、README、验收矩阵和已知问题，执行全量自动化、密钥扫描与对抗式审查后再决定是否扩大本地 Beta。
+1. **Core 稳定性优先**
+   优先处理 ChatGPT、Claude、Gemini 的真实页面变化、定位回归、写回与 Undo 问题。
+2. **Provider Preview 按条件补验**
+   获得 Anthropic 或 Gemini API Key 后，再分别执行原生协议测试连接、优化、写回与 Undo；通过前不升级为 verified。
+3. **Experimental 按需求推进**
+   只有在账号、地区条件或明确用户需求具备时，才继续补齐其完整矩阵；不因现有核心回归结果宣称全面支持。
+4. **决定下一发布阶段**
+   收集 0.1.1 Core Beta 反馈后，再决定扩大站点范围、准备商店发布，或进入 P1；当前不提前实现账号、遥测或云服务。
 
 ## 6. P0 后暂缓
 
@@ -104,4 +103,4 @@ Blink 0.1.0 在 Chrome 151 的独立 `--user-data-dir` Profile 中完成 ZIP 安
 - 多 Provider 路由、自动故障转移和本地模型。
 - 历史记录、收藏、同步、上下文读取和自动发送。
 
-这些项目只有在 P0 本地内测门槛完成并决定正式发布后再评估。
+这些项目只有在 0.1.1 Core Beta 闭环并确认下一阶段后再评估。

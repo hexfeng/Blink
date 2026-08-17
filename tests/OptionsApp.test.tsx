@@ -24,6 +24,8 @@ describe("options model and site catalogs", () => {
     await user.type(model, "provider/custom-model");
     expect(screen.getByRole("option", { name: /provider\/custom-model/ }).getAttribute("aria-selected")).toBe("true");
     expect((model as HTMLInputElement).value).toBe("provider/custom-model");
+    expect(screen.getByRole("option", { name: "Anthropic · Preview" })).toBeTruthy();
+    expect(screen.getByText(/chat website and model provider are independent/i)).toBeTruthy();
   });
 
   it("filters the site catalog and updates the enabled count", async () => {
@@ -31,14 +33,20 @@ describe("options model and site catalogs", () => {
     render(<OptionsApp demo />);
 
     expect(screen.getByText("3 enabled")).toBeTruthy();
+    expect(screen.getByText("ChatGPT")).toBeTruthy();
+    expect(screen.queryByText("Grok")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Experimental" }));
+    expect(screen.getByText("Grok")).toBeTruthy();
     await user.click(screen.getByRole("checkbox", { name: "Qwen: Site allowed" }));
     expect(screen.getByText("4 enabled")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Enabled" }));
     expect(screen.getByText("ChatGPT")).toBeTruthy();
     expect(screen.queryByText("Grok")).toBeNull();
+    expect(screen.getByText("Qwen")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "All" }));
+    await user.click(screen.getByRole("button", { name: "Experimental" }));
     await user.type(screen.getByRole("searchbox", { name: "Search sites" }), "deepseek");
     const cards = screen.getAllByRole("article");
     expect(cards).toHaveLength(1);

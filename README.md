@@ -4,14 +4,15 @@ Blink 是一个 Chrome Desktop MV3 扩展，在支持的 AI 对话网站输入�
 
 ## 当前状态
 
-P0 功能已经完成，项目处于本地内测验收阶段，尚未达到发布门槛。
+P0 功能与本地发布验收已经完成，当前版本为 0.1.1 Core Beta，优先保证 ChatGPT、Claude 和 Gemini。
 
-- 工程里程碑：8/9（89%，按门槛计数，不代表工时权重）。
-- 自动化：71/71 单元与组件测试通过；Playwright E2E 6/6 通过。
-- 实站验收：ChatGPT、Gemini、Claude 由用户确认完成完整路径；Grok、Qwen、MiniMax、Kimi、GLM / Z.ai、Copilot、Perplexity 已完成核心优化与 Undo 回归。
-- Provider：OpenAI-compatible 已完成真实模型全链路；Anthropic 与 Gemini 原生协议因暂缺 API Key 延后。
-- 本地 Beta：0.1.0 ZIP、干净 Profile 首次安装、本地升级模拟、Reset、卸载与重装验收已通过。
-- 当前首要阻塞：七个已通过核心链路的站点仍需补齐完整矩阵，文心助手与 Meta AI 尚待实测，四个站点存在真实外部阻塞，Anthropic 与 Gemini 原生协议仍待凭据验证。
+- 工程里程碑：9/9（100%，按门槛计数，不代表工时权重）。
+- 自动化：73/73 单元与组件测试通过；Playwright E2E 6/6 通过；0.1.1 ZIP 已完成结构、版本、权限与哈希检查。
+- Core 站点：ChatGPT、Claude、Gemini；三站已有完整实站证据，0.1.1 优化、直接写回和精确 Undo 冒烟通过。
+- Experimental 站点：其余 13 个适配器保留为显式可选功能，暂不作为当前 Core Beta 发布阻塞项。
+- Provider：OpenAI-compatible 已完成真实模型全链路；Anthropic 与 Gemini 原生协议标记为 Preview，因暂缺 API Key 延后。
+- 本地 Beta：0.1.0 已完成干净 Profile 的安装、升级模拟、Reset、卸载与重装；0.1.0→0.1.1 真实历史版本升级及配置、模式、权限保留验收通过。
+- 当前发布结论：0.1.1 已达到本地 Core Beta 门槛；Experimental 站点与原生 Anthropic/Gemini Provider Preview 按计划延期，不计为本轮阻塞。
 
 完整完成度、证据边界和下一步顺序见 [P0 状态与下一步计划](./docs/STATUS.md)。
 
@@ -51,9 +52,9 @@ Remove-Item Env:\BLINK_BENCHMARK_API_KEY
 ## P0 边界
 
 - Chrome Desktop MV3，仅本地内测。
-- 一个活动 Provider：OpenAI-compatible、Anthropic 或 Gemini。
+- 一个活动 Provider：OpenAI-compatible；Anthropic 与 Gemini 原生协议可选 Preview。
 - 自动、精简、专业以及最多 5 个自定义模式。
-- 用户逐站授权；没有“所有网站”开关。
+- 用户逐站授权；Core 默认只展示 ChatGPT、Claude、Gemini，Experimental 站点需显式选择；没有“所有网站”开关。
 - 不读取历史消息、附件或网页正文，不自动发送，不采集遥测。
 
 核心文档：
